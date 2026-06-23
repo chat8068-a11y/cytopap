@@ -2,9 +2,9 @@
 <html lang="th">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob:;">
+<meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; connect-src * https://api.jsonbin.io;">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CytoPAP System — Cervical Cytology Lab Management</title>
+<title>CytoPAP System v36 — Cervical Cytology Lab Management</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee','Tahoma','Cordia New','DB Helvethaica X','TH Sarabun New',Arial,sans-serif;background:#f0f4f8;color:#1a1a2e;font-size:15px;min-height:100vh}
@@ -149,7 +149,7 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
   <div class="sb-logo">
     <div class="name">CytoPAP System</div>
     <div class="sub">Cervical Cytology<br>Lab Management</div>
-    <span class="ver">Bethesda 2001 / 2014</span>
+    <span class="ver">v36 — Bethesda 2001 / 2014</span>
   </div>
   <nav class="nav">
     <button class="nav-btn active" onclick="showPage('form')" id="nb-form">
@@ -184,7 +184,7 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
 <div class="sb-foot">
     <div>ThinPrep PAP / SurePath</div>
     <div>HPV DNA Genotype Testing</div>
-    <div style="margin-top:6px;opacity:.4">v4.0 — CytoPAP System</div>
+    <div style="margin-top:6px;opacity:.4">v36 — CytoPAP System</div>
   </div>
 </aside>
 
@@ -237,8 +237,8 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
           <div class="hint">กรอกเองหรือกดปุ่มขวาเพื่อรับเลขต่อจากผลล่าสุดโดยอัตโนมัติ</div>
         </div>
         <div class="field">
-          <label>ราคาค่าตรวจ (บาท)</label>
-          <input id="f-price" type="number" placeholder="0" min="0">
+          <label>ราคาค่าตรวจ (บาท) <span style="font-size:11px;color:#1a7a3c;font-weight:400">— auto fill อัตโนมัติ ✓</span></label>
+          <input id="f-price" type="number" placeholder="0" min="0" style="background:#f7f9fd;color:#1a3a6e;font-weight:700">
         </div>
         <div class="field full">
           <label>คลินิก / แพทย์ที่ส่งตรวจ</label>
@@ -300,7 +300,8 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
           </div>
         </div>
       </div>
-      <div id="sec-cyto-wrap">
+      <div id="biopsy-note" style="display:none;background:#FFF8E1;border:1px solid #FFD54F;border-radius:8px;padding:12px;margin-bottom:12px;font-size:13px;color:#5D4037"><strong>Biopsy</strong> — บันทึกชื่อและราคาเท่านั้น ไม่มีผลตรวจ</div>
+<div id="sec-cyto-wrap">
       <div class="divider"></div>
       <div class="field" style="margin-bottom:14px">
         <label>General Categorization</label>
@@ -311,17 +312,19 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
         </div>
       </div>
 
+      <!-- Organism แสดงเสมอ ทั้ง Negative และ Epithelial Cell Abnormality -->
       <div id="sec-org">
         <div class="field" style="margin-bottom:10px">
-          <label>Organism / Other Findings</label>
+          <label>Organism / Other Findings <span style="font-size:11px;font-weight:400;color:#1a7a3c">— ติ๊กได้ทุก Category</span></label>
           <div class="pills" id="pg-org">
-            <label class="pill sel"><input type="checkbox" value="Bacterial vaginosis." checked>Bacterial vaginosis</label>
-            <label class="pill"><input type="checkbox" value="Trichomonas vaginalis.">Trichomonas vaginalis</label>
-            <label class="pill"><input type="checkbox" value="Candida species.">Candida</label>
-            <label class="pill"><input type="checkbox" value="Actinomyces species.">Actinomyces</label>
-            <label class="pill"><input type="checkbox" value="Herpes simplex virus.">Herpes simplex</label>
+            <label class="pill"><input type="checkbox" value="Bacterial vaginosis.">101 Bacterial vaginosis</label>
+            <label class="pill"><input type="checkbox" value="Trichomonas vaginalis.">102 Trichomonas spp.</label>
+            <label class="pill"><input type="checkbox" value="Candida species.">103 Candida spp.</label>
+            <label class="pill"><input type="checkbox" value="Actinomyces species.">104 Actinomyces spp.</label>
+            <label class="pill"><input type="checkbox" value="Herpes simplex virus.">105 HSV (Herpes simplex virus)</label>
             <label class="pill"><input type="checkbox" value="Shift in flora suggested.">Shift in flora</label>
             <label class="pill"><input type="checkbox" value="No organism identified.">ไม่พบเชื้อ</label>
+            <label class="pill"><input type="checkbox" value="Other organism.">106 Other organism</label>
           </div>
         </div>
 
@@ -351,24 +354,58 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
       </div>
 
       <div id="sec-epi" style="display:none">
+        <!-- Organism ซ้ำสำหรับ Epithelial Cell Abnormality — ใช้ id ต่างกัน เพื่อ collect ได้ -->
+        <div style="background:#f7faff;border:1.5px solid #c7d8f5;border-radius:10px;padding:12px 14px;margin-bottom:14px">
+          <div style="font-size:12px;font-weight:700;color:#1a3a6e;margin-bottom:8px">200 Epithelial Cell Abnormalities — Organism / Other Findings</div>
+          <div class="pills" id="pg-org-epi">
+            <label class="pill"><input type="checkbox" name="org-epi" value="Bacterial vaginosis.">101 Bacterial vaginosis</label>
+            <label class="pill"><input type="checkbox" name="org-epi" value="Trichomonas vaginalis.">102 Trichomonas spp.</label>
+            <label class="pill"><input type="checkbox" name="org-epi" value="Candida species.">103 Candida spp.</label>
+            <label class="pill"><input type="checkbox" name="org-epi" value="Actinomyces species.">104 Actinomyces spp.</label>
+            <label class="pill"><input type="checkbox" name="org-epi" value="Herpes simplex virus.">105 HSV (Herpes simplex virus)</label>
+            <label class="pill"><input type="checkbox" name="org-epi" value="Shift in flora suggested.">Shift in flora</label>
+            <label class="pill"><input type="checkbox" name="org-epi" value="No organism identified.">ไม่พบเชื้อ</label>
+            <label class="pill"><input type="checkbox" name="org-epi" value="Other organism.">106 Other organism</label>
+          </div>
+        </div>
         <div class="grid g2" style="margin-bottom:12px">
           <div class="field">
             <label>Squamous Cell Abnormality</label>
-            <div class="pills">
-              <label class="pill"><input type="radio" name="sqm" value="ASC-US">ASC-US</label>
-              <label class="pill"><input type="radio" name="sqm" value="ASC-H">ASC-H</label>
-              <label class="pill"><input type="radio" name="sqm" value="LSIL">LSIL</label>
-              <label class="pill"><input type="radio" name="sqm" value="HSIL">HSIL</label>
-              <label class="pill"><input type="radio" name="sqm" value="Squamous cell carcinoma">SCC</label>
+            <div class="pills" id="pg-sqm">
+              <label class="pill"><input type="radio" name="sqm" value="Atypical squamous cells of undetermined significance (ASC-US)" onchange="onSqmChange(this.value)">Atypical squamous cells of undetermined significance (ASC-US)</label>
+              <label class="pill"><input type="radio" name="sqm" value="Atypical squamous cells, cannot exclude HSIL (ASC-H)" onchange="onSqmChange(this.value)">Atypical squamous cells, cannot exclude HSIL (ASC-H)</label>
+              <label class="pill"><input type="radio" name="sqm" value="Low grade squamous intraepithelial lesion (LSIL)" onchange="onSqmChange(this.value)">Low grade squamous intraepithelial lesion (LSIL)</label>
+              <label class="pill"><input type="radio" name="sqm" value="High grade squamous intraepithelial lesion (HSIL)" onchange="onSqmChange(this.value)">High grade squamous intraepithelial lesion (HSIL)</label>
+              <label class="pill"><input type="radio" name="sqm" value="Squamous cell carcinoma (SCC)" onchange="onSqmChange(this.value)">Squamous cell carcinoma (SCC)</label>
+            </div>
+            <!-- LSIL sub-options -->
+            <div id="sec-lsil-sub" style="display:none;margin-top:8px;padding:10px 14px;background:#eef4ff;border-radius:8px;border:1.5px solid #3a5fa0">
+              <div style="font-size:12px;font-weight:700;color:#1a3a6e;margin-bottom:6px">Low grade squamous intraepithelial lesion (LSIL) encompassing:</div>
+              <div class="pills">
+                <label class="pill"><input type="checkbox" name="lsil-sub" value="HPV change">HPV change</label>
+                <label class="pill"><input type="checkbox" name="lsil-sub" value="CIN I">CIN I</label>
+              </div>
+            </div>
+            <!-- HSIL sub-options -->
+            <div id="sec-hsil-sub" style="display:none;margin-top:8px;padding:10px 14px;background:#fff0f0;border-radius:8px;border:1.5px solid #e53e3e">
+              <div style="font-size:12px;font-weight:700;color:#c53030;margin-bottom:6px">High grade squamous intraepithelial lesion (HSIL) encompassing:</div>
+              <div class="pills">
+                <label class="pill"><input type="checkbox" name="hsil-sub" value="CIN II">CIN II</label>
+                <label class="pill"><input type="checkbox" name="hsil-sub" value="CIN III">CIN III</label>
+                <label class="pill"><input type="checkbox" name="hsil-sub" value="with features suspicious for invasion">with features suspicious for invasion</label>
+              </div>
             </div>
           </div>
           <div class="field">
             <label>Glandular Cell Abnormality</label>
             <div class="pills">
-              <label class="pill"><input type="radio" name="gln" value="AGC NOS (endocervical)">AGC (endocervical)</label>
-              <label class="pill"><input type="radio" name="gln" value="AGC NOS (endometrial)">AGC (endometrial)</label>
-              <label class="pill"><input type="radio" name="gln" value="Adenocarcinoma in situ">AIS</label>
-              <label class="pill"><input type="radio" name="gln" value="Adenocarcinoma">Adenocarcinoma</label>
+              <label class="pill"><input type="radio" name="gln" value="Atypical glandular cells, NOS (endocervical)">Atypical glandular cells, NOS (endocervical)</label>
+              <label class="pill"><input type="radio" name="gln" value="Atypical glandular cells, NOS (endometrial)">Atypical glandular cells, NOS (endometrial)</label>
+              <label class="pill"><input type="radio" name="gln" value="Atypical glandular cells, favor neoplastic (endocervical)">Atypical glandular cells, favor neoplastic (endocervical)</label>
+              <label class="pill"><input type="radio" name="gln" value="Endocervical adenocarcinoma in situ (AIS)">Endocervical adenocarcinoma in situ (AIS)</label>
+              <label class="pill"><input type="radio" name="gln" value="Adenocarcinoma (endocervical)">Adenocarcinoma (endocervical)</label>
+              <label class="pill"><input type="radio" name="gln" value="Adenocarcinoma (endometrial)">Adenocarcinoma (endometrial)</label>
+              <label class="pill"><input type="radio" name="gln" value="Adenocarcinoma (extrauterine)">Adenocarcinoma (extrauterine)</label>
             </div>
           </div>
         </div>
@@ -391,10 +428,15 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
     <div class="card-body">
       <div class="field" style="margin-bottom:14px">
         <label>ประเภทการตรวจ</label>
-        <div class="pills">
-          <label class="pill sel"><input type="radio" name="hi" value="yes" checked>Pap Smear + HPV DNA</label>
-          <label class="pill"><input type="radio" name="hi" value="no">Pap Smear อย่างเดียว</label>
-          <label class="pill"><input type="radio" name="hi" value="hpv-only">HPV DNA อย่างเดียว</label>
+        <div class="pills" style="flex-wrap:wrap;gap:6px">
+          <label class="pill sel" style="margin-bottom:4px"><input type="radio" name="examType" value="pap_hpv" checked>ThinPrep PAP + HPV DNA</label>
+          <label class="pill" style="margin-bottom:4px"><input type="radio" name="examType" value="pap_only">ThinPrep PAP</label>
+          <label class="pill" style="margin-bottom:4px"><input type="radio" name="examType" value="pap_prog">ThinPrep PAP โปรแกรม</label>
+          <label class="pill" style="margin-bottom:4px"><input type="radio" name="examType" value="hpv_only">HPV DNA</label>
+          <label class="pill" style="margin-bottom:4px"><input type="radio" name="examType" value="hpv_prog">HPV โปรแกรม</label>
+          <label class="pill" style="margin-bottom:4px"><input type="radio" name="examType" value="pap1">PAP Smear 1</label>
+          <label class="pill" style="margin-bottom:4px"><input type="radio" name="examType" value="pap2">PAP Smear 2</label>
+          <label class="pill" style="margin-bottom:4px"><input type="radio" name="examType" value="biopsy">Biopsy (ชิ้นเนื้อ)</label>
         </div>
       </div>
       <div id="hpv-det">
@@ -524,15 +566,15 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
 <!-- ── PAGE: BILLING ── -->
 <div id="page-billing" class="page">
   <div class="page-title">สรุปค่าตรวจรายเดือน</div>
-  <div class="page-sub">แยกตามคลินิก — เลือกเดือนและปีที่ต้องการ</div>
+  <div class="page-sub">สรุปรายได้แยกตามคลินิก — ใช้วันที่รับตัวอย่างเป็นหลัก</div>
 
   <div class="card">
     <div class="card-head">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:15px;height:15px"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-      เลือกช่วงเวลา
+      เลือกช่วงเวลาและคลินิก
     </div>
     <div class="card-body">
-      <div class="grid g3" style="align-items:end">
+      <div class="grid g3">
         <div class="field">
           <label>เดือน</label>
           <select id="bill-month">
@@ -545,86 +587,44 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
           </select>
         </div>
         <div class="field">
-          <label>ปี (พ.ศ.)</label>
-          <input id="bill-year" type="number" placeholder="2568" min="2560" max="2580">
+          <label>ปี พ.ศ.</label>
+          <input id="bill-year" type="number" placeholder="2568">
         </div>
-        <div>
-          <button class="btn btn-primary" onclick="renderBilling()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            ดูสรุป
-          </button>
+        <div class="field">
+          <label>คลินิก</label>
+          <select id="bill-clinic">
+            <option value="">— ทุกคลินิก —</option>
+          </select>
         </div>
+      </div>
+      <div class="btn-row" style="padding-bottom:0">
+        <button class="btn btn-primary" onclick="renderBilling()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          แสดงสรุป
+        </button>
       </div>
     </div>
   </div>
+
+  <!-- Summary cards -->
+  <div id="bill-grand" class="card" style="display:none"></div>
+
+  <!-- Per-clinic tables -->
+  <div id="bill-clinics"></div>
+
+  <!-- Empty -->
+  <div id="bill-empty" class="empty-state" style="display:none">ไม่พบข้อมูลในช่วงเวลานี้</div>
 
   <div id="bill-result" style="display:none">
-    <!-- Grand total -->
-    <div id="bill-grand" class="card" style="margin-bottom:18px"></div>
-
-    <!-- Per clinic -->
-    <div id="bill-clinics"></div>
-
-    <!-- Print button -->
     <div class="btn-row">
       <button class="btn btn-outline" onclick="printBilling()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
         พิมพ์รายงานสรุป
       </button>
-    </div>
-  </div>
-
-  <div id="bill-empty" class="empty-state" style="display:none">
-    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
-    ไม่มีข้อมูลในเดือนที่เลือก
-  </div>
-</div>
-
-<!-- ── PAGE: BATCH PRINT ── -->
-<div id="page-batch" class="page">
-  <div class="page-title">พิมพ์ผลตามช่วง CYTO LOHY Number</div>
-  <div class="page-sub">เลือกช่วงหมายเลขที่ต้องการพิมพ์รวมในครั้งเดียว</div>
-  <div class="card">
-    <div class="card-head">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:15px;height:15px"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-      กำหนดช่วง CYTO LOHY Number
-    </div>
-    <div class="card-body">
-      <div class="grid g3" style="align-items:end;margin-bottom:14px">
-        <div class="field">
-          <label>จากหมายเลข (เริ่มต้น)</label>
-          <input id="batch-from" type="number" placeholder="เช่น 401" min="1">
-        </div>
-        <div class="field">
-          <label>ถึงหมายเลข (สิ้นสุด)</label>
-          <input id="batch-to" type="number" placeholder="เช่น 420" min="1">
-        </div>
-        <div>
-          <button class="btn btn-primary" onclick="previewBatch()" style="width:100%">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-            ดูรายการ
-          </button>
-        </div>
-      </div>
-      <div id="batch-list" style="display:none">
-        <div class="divider"></div>
-        <div id="batch-count" style="font-size:13px;color:#6b7a99;margin-bottom:12px"></div>
-        <table class="rec-table">
-          <thead><tr><th>CYTO LOHY No.</th><th>ชื่อ-สกุล</th><th>อายุ</th><th>คลินิก</th><th>วันที่รายงาน</th><th>ผล Pap</th><th>HPV</th><th style="text-align:center">เลือก</th></tr></thead>
-          <tbody id="batch-tbody"></tbody>
-        </table>
-        <div class="btn-row" style="margin-top:16px">
-          <button class="btn btn-primary" onclick="printBatch()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-            พิมพ์รายการที่เลือกทั้งหมด
-          </button>
-          <button class="btn btn-outline" onclick="selectAllBatch(true)">เลือกทั้งหมด</button>
-          <button class="btn btn-gray" onclick="selectAllBatch(false)">ยกเลิกทั้งหมด</button>
-        </div>
-      </div>
-      <div id="batch-empty" style="display:none" class="empty-state">
-        ไม่พบผลตรวจในช่วงที่เลือก
-      </div>
+      <button class="btn btn-outline" onclick="emailBilling()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        เปิด Email สรุป
+      </button>
     </div>
   </div>
 </div>
@@ -866,9 +866,14 @@ function loadData(){
   CFG.jbBinId = JB_BIN_ID;
 }
 function saveLocal(){
-  var rStr=JSON.stringify(REC); var cStr=JSON.stringify(CFG);
-  ['cp5_rec','cp7_rec'].forEach(function(k){localStorage.setItem(k,rStr);});
-  ['cp5_cfg','cp7_cfg'].forEach(function(k){localStorage.setItem(k,cStr);});
+  try{
+    var rStr=JSON.stringify(REC); var cStr=JSON.stringify(CFG);
+    ['cp5_rec','cp7_rec'].forEach(function(k){localStorage.setItem(k,rStr);});
+    ['cp5_cfg','cp7_cfg'].forEach(function(k){localStorage.setItem(k,cStr);});
+  }catch(e){
+    // localStorage ไม่ available — ใช้ JSONBin เป็น storage หลักแทน
+    console.warn('localStorage unavailable, JSONBin is primary storage');
+  }
 }
 
 // ─── SYNC STATUS BAR ──────────────────────────────
@@ -1025,6 +1030,11 @@ function init(){
   fillClinicSelect();
   updateNextNo();
   fillDefaultStaff();
+  // Auto-fill price on load
+  setTimeout(function(){
+    var et=R('examType')||'pap_hpv';
+    onExamTypeChange(et);
+  },300);
   setSyncStatus(false,'กำลังเชื่อมต่อ...');
   // Auto-migrate: if cp5_rec empty but cp7_rec has data, copy it
   try{
@@ -1040,22 +1050,40 @@ function init(){
   jbInit();
 }
 
+// ─── SQM SUB-OPTIONS ──────────────────────────────
+function onSqmChange(val){
+  var lsilSec=document.getElementById('sec-lsil-sub');
+  var hsilSec=document.getElementById('sec-hsil-sub');
+  if(lsilSec) lsilSec.style.display=(val&&val.indexOf('LSIL')!==-1)?'block':'none';
+  if(hsilSec) hsilSec.style.display=(val&&val.indexOf('HSIL')!==-1)?'block':'none';
+  // reset checkboxes ของ section ที่ซ่อน
+  if(val&&val.indexOf('LSIL')===-1){
+    document.querySelectorAll('input[name="lsil-sub"]').forEach(function(c){c.checked=false;c.parentElement.classList.remove('sel');});
+  }
+  if(val&&val.indexOf('HSIL')===-1){
+    document.querySelectorAll('input[name="hsil-sub"]').forEach(function(c){c.checked=false;c.parentElement.classList.remove('sel');});
+  }
+}
+
 // ─── PILLS ────────────────────────────────────────
 function setupPills(){
   document.querySelectorAll('.pill').forEach(function(p){
     p.addEventListener('click',function(e){
       e.preventDefault();
       var inp=this.querySelector('input');
+      if(!inp) return;
       if(inp.type==='radio'){
         document.querySelectorAll('input[name="'+inp.name+'"]').forEach(function(r){r.parentElement.classList.remove('sel')});
         this.classList.add('sel'); inp.checked=true; onPillChange(inp.name,inp.value);
+        if(inp.name==='sqm') onSqmChange(inp.value);
       } else { this.classList.toggle('sel'); inp.checked=!inp.checked; }
     });
   });
 }
 function onPillChange(name,val){
+  if(name==='examType'){ onExamTypeChange(val); return; }
   if(name==='cat'){
-    document.getElementById('sec-org').style.display=val!=='Epithelial Cell Abnormality'?'block':'none';
+    document.getElementById('sec-org').style.display='block';
     document.getElementById('sec-epi').style.display=val==='Epithelial Cell Abnormality'?'block':'none';
   }
   if(name==='hi'){
@@ -1069,7 +1097,7 @@ function onPillChange(name,val){
 
 // ─── CLINIC SELECT ────────────────────────────────
 function fillClinicSelect(){
-  var s=document.getElementById('f-clinic'); var cur=s.value;
+  var s=document.getElementById('f-clinic'); s.onchange=onClinicChange; var cur=s.value;
   s.innerHTML='<option value="">— เลือกคลินิก —</option>';
   (CFG.clinics||[]).forEach(function(c){
     var n=typeof c==='object'?c.name||'':c;
@@ -1105,11 +1133,30 @@ function CH(id){var r=[];document.querySelectorAll('#'+id+' input[type=checkbox]
 function CHN(n){var r=[];document.querySelectorAll('input[name="'+n+'"]:checked').forEach(function(c){r.push(c.value)});return r}
 function V(id){return(document.getElementById(id)||{}).value||''}
 function collectForm(){
+  var examType=R('examType')||'pap_hpv'; var eDef=EXAM_DEF[examType]||{label:'ThinPrep PAP + HPV DNA'};
+  var sqmVal=R('sqm');
+  var lsilSubs=CHN('lsil-sub');
+  var hsilSubs=CHN('hsil-sub');
+  // สร้างค่า sqm แบบเต็มรวม sub-options
+  var sqmFull=sqmVal;
+  if(sqmVal&&sqmVal.indexOf('LSIL')!==-1&&lsilSubs.length){
+    sqmFull=sqmVal+' — '+lsilSubs.join(', ');
+  }
+  if(sqmVal&&sqmVal.indexOf('HSIL')!==-1&&hsilSubs.length){
+    sqmFull=sqmVal+' — '+hsilSubs.join(', ');
+  }
   return{name:V('f-name'),age:V('f-age'),dc:V('f-dc'),dr:V('f-dr'),phone:V('f-phone'),
-    price:V('f-price'),cyto:V('f-cyto'),clinic:V('f-clinic'),
+    price:V('f-price'),cyto:V('f-cyto'),clinic:V('f-clinic'),examType:examType,examLabel:eDef.label,
     sp:R('sp'),mt:R('mt'),adq:R('adq'),tz:R('tz'),cat:R('cat'),
-    orgs:CH('pg-org'),nnv:CH('pg-nnv'),rcc:CH('pg-rcc'),sqm:R('sqm'),gln:R('gln'),rmk:V('f-rmk'),
-    hi:R('hi'),hkit:V('f-hkit'),hmth:V('f-hmth'),hr:R('hr'),
+    orgs:CH('pg-org'),orgsEpi:CHN('org-epi'),nnv:CH('pg-nnv'),rcc:CH('pg-rcc'),
+    sqm:sqmFull,sqmBase:sqmVal,lsilSubs:lsilSubs,hsilSubs:hsilSubs,
+    gln:R('gln'),rmk:V('f-rmk'),
+    hi:(function(){
+      var et=R('examType')||'pap_hpv';
+      if(et==='pap_hpv'||et==='hpv_only'||et==='hpv_prog') return 'yes';
+      if(et==='biopsy') return 'no';
+      return R('hi')||'no';
+    })(),hkit:V('f-hkit'),hmth:V('f-hmth'),hr:R('hr'),
     hrGenos:CHN('hr-geno'),lrGenos:CHN('lr-geno'),phrGenos:CHN('phr-geno'),
     non32:(document.getElementById('f-non32')?document.getElementById('f-non32').checked:false),
     tdv:R('tdv'),
@@ -1119,86 +1166,163 @@ function collectForm(){
 // ─── HELPERS ──────────────────────────────────────
 function eh(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
 function fd(d){if(!d)return'';var p=d.split('-');return p.length!==3?d:p[2]+'/'+p[1]+'/'+p[0]}
-function suggestFilename(d){return((d.name||'report').replace(/\s+/g,'_'))+'_'+d.cyto}
+function suggestFilename(d){
+  var dr=(d.dr||d.dc||'').replace(/-/g,'');
+  var examShort={
+    pap_hpv:'PAP+HPV',hpv_only:'HPV',pap_only:'PAP',
+    hpv_prog:'HPV-prog',pap_prog:'PAP-prog',
+    pap1:'PAP1',pap2:'PAP2',biopsy:'Biopsy'
+  }[d.examType||'pap_hpv']||'PAP';
+  return 'CYTO'+(d.cyto||'')+'_'+(d.name||'report').replace(/\s+/g,'_')+'_'+dr+'_'+examShort;
+}
 
 // ─── BUILD REPORT ─────────────────────────────────
 function buildReport(d){
-  var orgLine='';
-  if(d.cat!=='Epithelial Cell Abnormality'&&d.orgs&&d.orgs.length)
-    orgLine='<div style="padding-left:14px">-Organism ; '+eh(d.orgs.join(', '))+'</div>';
-  var nnvLine='';
-  if(d.nnv&&d.nnv.length)
-    nnvLine='<div style="padding-left:14px">-Non-Neoplastic Cellular Variations ; '+eh(d.nnv.join(', '))+'</div>';
-  var rccLine='';
-  if(d.rcc&&d.rcc.length)
-    rccLine='<div style="padding-left:14px">-Reactive Cellular Changes associated with ; '+eh(d.rcc.join(', '))+'</div>';
-  var epiLine='';
-  if(d.cat==='Epithelial Cell Abnormality'){
-    var pts=[];if(d.sqm)pts.push('Squamous Cell: '+d.sqm);if(d.gln)pts.push('Glandular Cell: '+d.gln);
-    epiLine='<div style="padding-left:14px">'+eh(pts.join(' / '))+'</div>';
+  // Map examType to hi/hr for compatibility
+  if(d.examType){
+    if(d.examType==='pap_hpv'||d.examType==='hpv_only'||d.examType==='hpv_prog'){
+      if(!d.hi||d.hi==='no') d.hi='yes';
+    } else {
+      if(!d.hi) d.hi='no';
+    }
   }
-  var hpvBlock='';
-  if(d.hi==='yes'){
-    var genoLine='';
+  var genoLine='';
   if(d.hr==='Detected'){
     var gArr=[];
-    if(d.hrGenos&&d.hrGenos.length) gArr.push('-Positive for HPV DNA, High risk type '+d.hrGenos.join(','));
-    if(d.lrGenos&&d.lrGenos.length) gArr.push('-Positive for HPV DNA, Low risk type '+d.lrGenos.join(','));
-    if(d.phrGenos&&d.phrGenos.length) gArr.push('-Positive for HPV DNA, Probable high risk type '+d.phrGenos.join(','));
+    if(d.hrGenos&&d.hrGenos.length) gArr.push('-Positive for HPV DNA, High risk type '+d.hrGenos.join(', '));
+    if(d.lrGenos&&d.lrGenos.length) gArr.push('-Positive for HPV DNA, Low risk type '+d.lrGenos.join(', '));
+    if(d.phrGenos&&d.phrGenos.length) gArr.push('-Positive for HPV DNA, Probable high risk type '+d.phrGenos.join(', '));
     if(d.non32) gArr.push('-Positive for HPV DNA, Non 32 type');
-    if(gArr.length) genoLine='<div style="padding:6px 0 2px;font-size:13.5pt;font-weight:bold;line-height:1.9">'+gArr.map(function(l){return eh(l)}).join('<br>')+'</div>';
+    if(gArr.length) genoLine='<div style="font-size:14pt;font-weight:bold;line-height:1.6;margin-top:3pt">'+gArr.map(function(l){return eh(l)}).join('<br>')+'</div>';
   }
+  // Organism — แสดงได้ทุก category
+  // สำหรับ Negative ใช้ orgs, สำหรับ Epithelial ใช้ orgsEpi (หรือ orgs ถ้า orgsEpi ว่าง)
+  var orgLine='';
+  var orgSrc=d.cat==='Epithelial Cell Abnormality'
+    ?(d.orgsEpi&&d.orgsEpi.length?d.orgsEpi:d.orgs)
+    :d.orgs;
+  if(orgSrc&&orgSrc.length)
+    orgLine='<div style="padding-left:12pt;font-size:13pt;font-weight:bold">-Organism: '+eh(orgSrc.join(', '))+'</div>';
+  var nnvLine='';
+  if(d.nnv&&d.nnv.length)
+    nnvLine='<div style="padding-left:12pt;font-size:13pt;font-weight:bold">-Non-Neoplastic: '+eh(d.nnv.join(', '))+'</div>';
+  var rccLine='';
+  if(d.rcc&&d.rcc.length)
+    rccLine='<div style="padding-left:12pt;font-size:13pt;font-weight:bold">-Reactive Changes: '+eh(d.rcc.join(', '))+'</div>';
+  var epiLine='';
+  if(d.cat==='Epithelial Cell Abnormality'){
+    var pts=[];
+    if(d.sqm) pts.push('Squamous Cell: '+d.sqm);
+    if(d.gln) pts.push('Glandular Cell: '+d.gln);
+    epiLine='<div style="padding-left:12pt;font-size:13pt;font-weight:bold">'+eh(pts.join(' / '))+'</div>';
+  }
+  var hpvBlock='';
+  if(d.hi==='yes'||d.hi==='hpv-only'||d.examType==='hpv_only'||d.examType==='hpv_prog'||d.examType==='pap_hpv'){
     var desc=TDESC[d.tdv]||TDESC.v1;
-    hpvBlock='<table style="width:100%;border-collapse:collapse;margin-bottom:6px">'+
-      '<tr><td colspan="2" style="border:1px solid #000;text-align:center;padding:5px 8px;font-size:12.5pt;font-weight:bold;background:#f5f5f5">HPV DNA Genotype Testing</td></tr>'+
-      '<tr><td colspan="2" style="border:1px solid #000;text-align:center;padding:3px 8px;font-size:11pt">'+eh(d.hkit)+'</td></tr>'+
-      '<tr><td style="border:1px solid #000;padding:3px 8px;font-size:11pt;width:130px"><b>Method :</b></td>'+
-          '<td style="border:1px solid #000;padding:3px 8px;font-size:11pt">'+eh(d.hmth)+'</td></tr>'+
-      '<tr><td style="border:1px solid #000;padding:3px 8px;font-size:11pt"><b>Specimen :</b></td>'+
-          '<td style="border:1px solid #000;padding:3px 8px;font-size:11pt">Preserved Uterine Cervix cells from Liquid Based Solution</td></tr>'+
-      '<tr><td colspan="2" style="border:2px solid #000;padding:8px 12px;font-size:14pt;font-weight:bold">Result :&nbsp;&nbsp;&nbsp; '+eh(d.hr)+(d.hr==="Detected"&&genoLine?'<br>'+genoLine:'')+'</td></tr>'+
+    hpvBlock=
+      '<table style="width:100%;border-collapse:collapse;margin-top:5pt;margin-bottom:4pt">'+
+        '<tr><td colspan="2" style="border:1px solid #000;text-align:center;padding:4pt 6pt;font-size:14pt;font-weight:bold;background:#f0f0f0">HPV DNA Genotype Testing</td></tr>'+
+        '<tr><td colspan="2" style="border:1px solid #000;text-align:center;padding:3pt 6pt;font-size:13pt;font-weight:bold">'+eh(d.hkit)+'</td></tr>'+
+        '<tr>'+
+          '<td style="border:1px solid #000;padding:3pt 6pt;font-size:13pt;width:90pt"><b>Method :</b></td>'+
+          '<td style="border:1px solid #000;padding:3pt 6pt;font-size:13pt;font-weight:bold">'+eh(d.hmth)+'</td>'+
+        '</tr>'+
+        '<tr>'+
+          '<td style="border:1px solid #000;padding:3pt 6pt;font-size:13pt"><b>Specimen :</b></td>'+
+          '<td style="border:1px solid #000;padding:3pt 6pt;font-size:13pt;font-weight:bold">Preserved Uterine Cervix cells from Liquid Based Solution</td>'+
+        '</tr>'+
+        '<tr>'+
+          '<td colspan="2" style="border:1.5px solid #000;padding:6pt 10pt;font-size:15pt;font-weight:bold">'+
+            'Result :&nbsp; '+eh(d.hr)+
+            (d.hr==='Detected'&&genoLine?'<br>'+genoLine:'')+
+          '</td>'+
+        '</tr>'+
       '</table>'+
-      '<div style="font-size:8.5pt;line-height:1.5;margin-bottom:6px;border:1px solid #ddd;padding:5px 8px;background:#fafafa"><b>Test Description:</b> '+eh(desc)+'</div>';
+      '<div style="font-size:9.5pt;line-height:1.45;margin-bottom:5pt;border:1px solid #ddd;padding:4pt 7pt;background:#fafafa;color:#333">'+
+        '<b>Test Description:</b> '+eh(desc)+
+      '</div>';
   }
-  var rmkDiv=d.rmk?'<div style="border:1px solid #ccc;padding:4px 8px;font-size:10.5pt;color:#333;margin-bottom:6px">Remarks: '+eh(d.rmk)+'</div>':'';
-  return '<div style="font-family:TH Sarabun New,Cordia New,Leelawadee UI,Leelawadee,Tahoma,serif;font-size:13.5pt;line-height:1.4;color:#000;background:#fff;padding:26px 36px;min-height:1060px;page-break-after:always">'+
-    '<div style="font-size:10pt;margin-bottom:1px">'+eh(CFG.l1)+'</div>'+
-    '<div style="font-size:10pt;margin-bottom:6px">'+eh(CFG.l2)+'</div>'+
-    '<div style="text-align:center;font-size:18pt;font-weight:bold;text-decoration:underline;display:block;margin-bottom:2px">'+eh(CFG.nth)+'</div>'+
-    '<div style="text-align:center;font-size:14pt;font-weight:bold;display:block;margin-bottom:12px">'+eh(CFG.nen)+'</div>'+
-    '<table style="width:100%;border-collapse:collapse;margin-bottom:6px">'+
-      '<tr><td style="border:1px solid #000;padding:3px 8px;width:62%;font-size:12pt"><b>ชื่อ-สกุล</b>&nbsp;'+eh(d.name)+'</td>'+
-      '<td style="border:1px solid #000;padding:3px 8px;font-size:12pt"><b>อายุ</b>&nbsp;'+eh(d.age)+' ปี</td></tr>'+
-      '<tr><td style="border:1px solid #000;padding:3px 8px;font-size:12pt"><b>คลินิกแพทย์</b>&nbsp;'+eh(d.clinic)+'</td>'+
-      '<td style="border:1px solid #000;padding:3px 8px;font-size:12pt"><b>เบอร์โทรที่ติดต่อได้</b>&nbsp;'+eh(d.phone)+'</td></tr>'+
-      '<tr><td style="border:1px solid #000;padding:3px 8px;font-size:12pt"><b>วันที่เก็บส่งตรวจ</b>&nbsp;'+fd(d.dc)+'</td>'+
-      '<td style="border:1px solid #000;padding:3px 8px;font-size:12pt"><b>วันที่รายงานผล</b>&nbsp;'+fd(d.dr)+'</td></tr>'+
+  var rmkDiv=d.rmk?'<div style="border:1px solid #ccc;padding:3pt 6pt;font-size:13pt;font-weight:bold;color:#333;margin-bottom:4pt">Remarks: '+eh(d.rmk)+'</div>':'';
+
+  return '<div style="'+
+    'font-family:\'TH Sarabun New\',\'Sarabun\',\'Cordia New\',\'Leelawadee UI\',serif;'+
+    'font-size:13pt;font-weight:bold;line-height:1.4;color:#000;background:#fff;'+
+    'padding:12mm 14mm 10mm 14mm;'+
+    'width:210mm;min-height:277mm;box-sizing:border-box;'+
+    'page-break-after:always">'+
+
+    // Header
+    '<div style="text-align:center;margin-bottom:4pt">'+
+      '<div style="font-size:11pt;font-weight:bold;color:#222;line-height:1.3">'+eh(CFG.l1)+'</div>'+
+      '<div style="font-size:11pt;font-weight:bold;color:#222;margin-bottom:3pt">'+eh(CFG.l2)+'</div>'+
+      '<div style="font-size:19pt;font-weight:bold;letter-spacing:0.3pt;margin-bottom:1pt">'+eh(CFG.nth)+'</div>'+
+      '<div style="font-size:15pt;font-weight:bold;margin-bottom:3pt">'+eh(CFG.nen)+'</div>'+
+      '<div style="border-bottom:2px solid #000;margin:3pt 0"></div>'+
+    '</div>'+
+
+    // Patient Info
+    '<table style="width:100%;border-collapse:collapse;margin-bottom:4pt">'+
+      '<tr>'+
+        '<td style="border:1px solid #000;padding:4pt 6pt;width:55%;font-size:17pt;font-weight:bold"><b>ชื่อ-สกุล :&nbsp;</b>'+eh(d.name)+'</td>'+
+        '<td style="border:1px solid #000;padding:4pt 6pt;font-size:17pt;font-weight:bold"><b>อายุ :&nbsp;</b>'+eh(d.age)+' ปี</td>'+
+      '</tr>'+
+      '<tr>'+
+        '<td style="border:1px solid #000;padding:3pt 6pt;font-size:13pt;font-weight:bold"><b>คลินิกแพทย์ :&nbsp;</b>'+eh(d.clinic)+'</td>'+
+        '<td style="border:1px solid #000;padding:3pt 6pt;font-size:13pt;font-weight:bold"><b>เบอร์โทร :&nbsp;</b>'+eh(d.phone)+'</td>'+
+      '</tr>'+
+      '<tr>'+
+        '<td style="border:1px solid #000;padding:3pt 6pt;font-size:13pt;font-weight:bold"><b>วันที่เก็บส่งตรวจ :&nbsp;</b>'+fd(d.dc)+'</td>'+
+        '<td style="border:1px solid #000;padding:3pt 6pt;font-size:13pt;font-weight:bold"><b>วันที่รายงานผล :&nbsp;</b>'+fd(d.dr)+'</td>'+
+      '</tr>'+
     '</table>'+
-    '<table style="width:100%;border-collapse:collapse;margin-bottom:6px">'+
-      '<tr><td style="border:1px solid #000;padding:3px 8px;width:68%;font-size:12pt">Type of specimen:'+eh(d.sp)+'</td>'+
-      '<td style="border:1px solid #000;padding:3px 8px;text-align:center;font-size:12pt">Cytologic No. '+eh(d.cyto)+'</td></tr>'+
+
+    // Specimen & Method
+    '<table style="width:100%;border-collapse:collapse;margin-bottom:4pt">'+
+      '<tr>'+
+        '<td style="border:1px solid #000;padding:3pt 6pt;width:65%;font-size:13pt;font-weight:bold"><b>Type of Specimen :&nbsp;</b>'+eh(d.sp)+'</td>'+
+        '<td style="border:1px solid #000;padding:3pt 6pt;text-align:center;font-size:13pt;font-weight:bold">Cytologic No. '+eh(d.cyto)+'</td>'+
+      '</tr>'+
     '</table>'+
-    '<div style="border:1px solid #000;padding:3px 8px;font-size:12pt;margin-bottom:6px">Method : '+eh(d.mt)+'</div>'+
-    (d.hi!=='hpv-only'?'<div style="border:1px solid #000;padding:8px 10px;font-size:12pt;margin-bottom:6px;line-height:1.75">'+
-      '<div><b>Specimen Adequacy :</b> '+eh(d.adq)+'</div>'+
-      '<div style="padding-left:14px">'+eh(d.tz)+'</div>'+
-      '<div style="margin-top:3px"><b>General Categorization :</b></div>'+
-      '<div style="padding-left:14px">'+eh(d.cat)+'</div>'+
-      orgLine+nnvLine+rccLine+epiLine+
-    '</div>'+rmkDiv:'<div style="border:1px solid #ccc;padding:5px 8px;font-size:10pt;margin-bottom:6px;color:#555">HPV DNA Only — ไม่มีผล Cytology</div>')+hpvBlock+
-    '<div style="text-align:center;font-size:10.5pt;margin-top:16px">Digitally signed out on:</div>'+
-    '<table style="width:100%;border-collapse:collapse;margin-top:8px">'+
-      '<tr><td style="border:none;text-align:center;width:50%;font-size:11pt"><b>Reported by</b></td>'+
-      '<td style="border:none;text-align:center;font-size:11pt"><b>Approved by</b></td></tr>'+
-      '<tr><td style="border:none;text-align:center;padding:14px 0 2px;font-size:11pt">'+eh(d.rn)+'</td>'+
-      '<td style="border:none;text-align:center;padding:14px 0 2px;font-size:11pt">'+eh(d.an)+'</td></tr>'+
-      '<tr><td style="border:none;text-align:center;font-size:10.5pt">'+eh(d.rt)+'</td>'+
-      '<td style="border:none;text-align:center;font-size:10.5pt">'+eh(d.at)+'</td></tr>'+
-      '<tr><td style="border:none;text-align:center;font-size:10.5pt">Licensed No.: '+eh(d.rl)+'</td>'+
-      '<td style="border:none;text-align:center;font-size:10.5pt">Licensed No.: '+eh(d.al)+'</td></tr>'+
+    '<div style="border:1px solid #000;padding:3pt 6pt;font-size:13pt;font-weight:bold;margin-bottom:4pt"><b>Method :&nbsp;</b>'+eh(d.mt)+'</div>'+
+
+    // Cytology
+    (d.hi!=='hpv-only'&&d.examType!=='hpv_only'&&d.examType!=='hpv_prog'&&d.examType!=='biopsy'?
+      '<div style="border:1px solid #000;padding:5pt 8pt;font-size:13pt;font-weight:bold;margin-bottom:4pt;line-height:1.55">'+
+        '<div><b>Specimen Adequacy :&nbsp;</b>'+eh(d.adq)+'</div>'+
+        '<div style="padding-left:12pt">'+eh(d.tz)+'</div>'+
+        '<div style="margin-top:3pt"><b>General Categorization :&nbsp;</b></div>'+
+        '<div style="padding-left:12pt">'+eh(d.cat)+'</div>'+
+        orgLine+nnvLine+rccLine+epiLine+
+      '</div>'+rmkDiv
+    :
+      '<div style="border:1px solid #ccc;padding:3pt 6pt;font-size:12pt;font-weight:bold;margin-bottom:4pt;color:#555">HPV DNA Testing Only</div>')+
+
+    hpvBlock+
+
+    // Signature
+    '<div style="text-align:center;font-size:12pt;font-weight:bold;margin-top:6pt;margin-bottom:3pt">Digitally signed out on:</div>'+
+    '<table style="width:100%;border-collapse:collapse">'+
+      '<tr>'+
+        '<td style="border:none;text-align:center;width:50%;padding-bottom:18pt;font-size:13pt;font-weight:bold"><b>Reported by</b></td>'+
+        '<td style="border:none;text-align:center;padding-bottom:18pt;font-size:13pt;font-weight:bold"><b>Approved by</b></td>'+
+      '</tr>'+
+      '<tr>'+
+        '<td style="border:none;text-align:center;font-size:13pt;font-weight:bold">'+eh(d.rn)+'</td>'+
+        '<td style="border:none;text-align:center;font-size:13pt;font-weight:bold">'+eh(d.an)+'</td>'+
+      '</tr>'+
+      '<tr>'+
+        '<td style="border:none;text-align:center;font-size:12pt;font-weight:bold">'+eh(d.rt)+'</td>'+
+        '<td style="border:none;text-align:center;font-size:12pt;font-weight:bold">'+eh(d.at)+'</td>'+
+      '</tr>'+
+      '<tr>'+
+        '<td style="border:none;text-align:center;font-size:11pt;font-weight:bold;color:#333">License No.: '+eh(d.rl)+'</td>'+
+        '<td style="border:none;text-align:center;font-size:11pt;font-weight:bold;color:#333">License No.: '+eh(d.al)+'</td>'+
+      '</tr>'+
     '</table>'+
-    '<div style="font-size:8.5pt;text-align:center;border-top:0.5px solid #999;padding-top:6px;margin-top:16px;color:#444">'+eh(CFG.footer)+'</div>'+
-    '</div>';
+    '<div style="border-top:1px solid #aaa;margin-top:6pt;padding-top:3pt;font-size:9pt;font-weight:bold;text-align:center;color:#555">'+
+      eh(CFG.footer)+
+    '</div>'+
+  '</div>';
 }
 
 // ─── PREVIEW ──────────────────────────────────────
@@ -1214,13 +1338,25 @@ function doPrint(){printDoc(_pd||collectForm())}
 
 // ─── PRINT SINGLE ─────────────────────────────────
 function printDoc(d){
-  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>'+suggestFilename(d)+'</title>'+
-    '<style>@page{size:A4;margin:0}body{margin:0;padding:0}*{box-sizing:border-box}div,table,td{page-break-inside:avoid}</style>'+
-    '</head><body>'+buildReport(d)+
+  if(!d||!d.name){toast('ข้อมูลไม่ครบ ไม่สามารถพิมพ์ได้','e');return;}
+  var reportHtml;
+  try{reportHtml=buildReport(d);}
+  catch(e){toast('เกิดข้อผิดพลาดในการสร้างรายงาน: '+e.message,'e');return;}
+  var fn=suggestFilename(d);
+  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>'+fn+'</title>'+
+    '<style>'+
+    '@page{size:A4;margin:0}'+
+    'html,body{margin:0;padding:0;width:210mm}'+
+    'body{font-family:"TH Sarabun New","Sarabun","Cordia New","Leelawadee UI",serif}'+
+    '*{box-sizing:border-box;-webkit-print-color-adjust:exact}'+
+    'div,table,td{page-break-inside:avoid}'+
+    '</style>'+
+    '</head><body>'+reportHtml+
     '<scr'+'ipt>window.onload=function(){setTimeout(function(){window.print();},300);}<\/scr'+'ipt></body></html>';
   var w=window.open('','_blank','width=960,height=760');
-  if(!w){toast('กรุณาอนุญาต Pop-up แล้วลองใหม่','e');return}
-  w.document.write(html);w.document.close();
+  if(!w){toast('กรุณาอนุญาต Pop-up แล้วลองใหม่','e');return;}
+  try{w.document.write(html);w.document.close();}
+  catch(e){try{w.close();}catch(_){}toast('เปิดหน้าพิมพ์ไม่ได้: '+e.message,'e');}
 }
 
 // ─── SAVE & PRINT ─────────────────────────────────
@@ -1241,6 +1377,27 @@ function clearForm(){
   document.getElementById('f-clinic').value='';
   var today=new Date().toISOString().split('T')[0];
   document.getElementById('f-dc').value=today; document.getElementById('f-dr').value=today;
+  // ── reset checkboxes ทั้งหมด (organism, nnv, rcc, org-epi, lsil-sub, hsil-sub)
+  var cbGroups=['pg-org','pg-org-epi','pg-nnv','pg-rcc'];
+  cbGroups.forEach(function(gid){
+    var g=document.getElementById(gid);
+    if(!g) return;
+    g.querySelectorAll('input[type=checkbox]').forEach(function(cb){
+      cb.checked=false;
+      if(cb.parentElement) cb.parentElement.classList.remove('sel');
+    });
+  });
+  // reset named checkboxes (lsil-sub, hsil-sub, org-epi)
+  ['lsil-sub','hsil-sub','org-epi'].forEach(function(nm){
+    document.querySelectorAll('input[name="'+nm+'"]').forEach(function(cb){
+      cb.checked=false;
+      if(cb.parentElement) cb.parentElement.classList.remove('sel');
+    });
+  });
+  // ซ่อน sub-option panels
+  var ls=document.getElementById('sec-lsil-sub'); if(ls) ls.style.display='none';
+  var hs=document.getElementById('sec-hsil-sub'); if(hs) hs.style.display='none';
+  var ep=document.getElementById('sec-epi'); if(ep) ep.style.display='none';
   fillDefaultStaff(); toast('ล้างฟอร์มแล้ว');
 }
 
@@ -1255,6 +1412,8 @@ function renderRec(){
     var ri=REC.indexOf(r);
     var cB=r.cat==='Negative for Intraepithelial Lesion or Malignancy'?'<span class="badge b-green">Negative</span>':'<span class="badge b-red">'+(r.cat||'—')+'</span>';
     var hB=r.hi==='yes'?(r.hr==='Nondetected'?'<span class="badge b-green">Nondetected</span>':'<span class="badge b-red">Detected</span>'):'<span class="badge b-gray">N/A</span>';
+    var eL='<span class="badge b-gray" style="font-size:11px">'+eh(r.examLabel||r.examType||'—')+'</span>';
+    var eL='<span class="badge b-gray" style="font-size:11px">'+eh(r.examLabel||r.examType||'—')+'</span>';
     return '<tr>'+
       '<td><strong style="color:#1a3a6e;font-size:14px">'+eh(r.cyto)+'</strong></td>'+
       '<td>'+eh(r.name)+'</td><td>'+eh(r.age)+'</td><td>'+fd(r.dc)+'</td>'+
@@ -1319,35 +1478,112 @@ var MONTH_TH=['','มกราคม','กุมภาพันธ์','มี�
 function renderBilling(){
   var m=parseInt(document.getElementById('bill-month').value);
   var y=parseInt(document.getElementById('bill-year').value);
-  if(!y){toast('กรุณากรอกปี พ.ศ.','e');return}
+  var filterClinic=document.getElementById('bill-clinic').value;
+  if(!y){toast('กรุณากรอกปี พ.ศ.','e');return;}
   var yAD=y-543;
-  var filtered=REC.filter(function(r){if(!r.dr)return false;var p=r.dr.split('-');if(p.length!==3)return false;return parseInt(p[0])===yAD&&parseInt(p[1])===m});
-  var result=document.getElementById('bill-result'); var empty=document.getElementById('bill-empty');
-  if(!filtered.length){result.style.display='none';empty.style.display='block';return}
-  result.style.display='block';empty.style.display='none';
-  var clinicMap={},grandTotal=0,grandCount=0;
-  filtered.forEach(function(r){var cl=r.clinic||'(ไม่ระบุคลินิก)';var price=parseFloat(r.price)||0;if(!clinicMap[cl])clinicMap[cl]={records:[],total:0,count:0};clinicMap[cl].records.push(r);clinicMap[cl].total+=price;clinicMap[cl].count++;grandTotal+=price;grandCount++});
-  document.getElementById('bill-grand').innerHTML='<div class="card-head"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:15px;height:15px"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>สรุปรวม — '+MONTH_TH[m]+' '+y+'</div>'+
-    '<div class="card-body"><div class="grid g3">'+
-    '<div style="background:#f7f9fd;border-radius:8px;padding:14px;text-align:center"><div style="font-size:12px;color:#6b7a99;margin-bottom:4px">จำนวนราย</div><div style="font-size:28px;font-weight:800;color:#1a3a6e">'+grandCount+'</div></div>'+
-    '<div style="background:#f7f9fd;border-radius:8px;padding:14px;text-align:center"><div style="font-size:12px;color:#6b7a99;margin-bottom:4px">จำนวนคลินิก</div><div style="font-size:28px;font-weight:800;color:#1a3a6e">'+Object.keys(clinicMap).length+'</div></div>'+
-    '<div style="background:#EAF3DE;border-radius:8px;padding:14px;text-align:center"><div style="font-size:12px;color:#27500A;margin-bottom:4px">ยอดรวมทั้งหมด</div><div style="font-size:28px;font-weight:800;color:#1a7a3c">'+grandTotal.toLocaleString()+' ฿</div></div>'+
-    '</div></div>';
-  var html='';
-  Object.keys(clinicMap).forEach(function(cl){var d=clinicMap[cl];
-    html+='<div class="card" style="margin-bottom:14px"><div class="card-head"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:15px;height:15px"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>'+eh(cl)+'</div>'+
-    '<div class="card-body"><div class="grid g3" style="margin-bottom:14px">'+
-    '<div style="background:#f7f9fd;border-radius:8px;padding:12px;text-align:center"><div style="font-size:11px;color:#6b7a99;margin-bottom:3px">จำนวนราย</div><div style="font-size:22px;font-weight:800;color:#1a3a6e">'+d.count+'</div></div>'+
-    '<div style="background:#EAF3DE;border-radius:8px;padding:12px;text-align:center"><div style="font-size:11px;color:#27500A;margin-bottom:3px">ยอดรวม</div><div style="font-size:22px;font-weight:800;color:#1a7a3c">'+d.total.toLocaleString()+' ฿</div></div>'+
-    '<div style="background:#f7f9fd;border-radius:8px;padding:12px;text-align:center"><div style="font-size:11px;color:#6b7a99;margin-bottom:3px">เฉลี่ย/ราย</div><div style="font-size:22px;font-weight:800;color:#1a3a6e">'+(d.count?Math.round(d.total/d.count).toLocaleString():0)+' ฿</div></div>'+
-    '</div>'+
-    '<table class="rec-table"><thead><tr><th>CYTO No.</th><th>ชื่อ-สกุล</th><th>อายุ</th><th>วันที่รายงาน</th><th>ผล Pap</th><th>HPV</th><th style="text-align:right">ค่าตรวจ (฿)</th></tr></thead><tbody>'+
-    d.records.map(function(r){var cB=r.cat==='Negative for Intraepithelial Lesion or Malignancy'?'<span class="badge b-green">Negative</span>':'<span class="badge b-red">'+(r.cat||'—')+'</span>';var hB=r.hi==='yes'?(r.hr==='Nondetected'?'<span class="badge b-green">Nondetected</span>':'<span class="badge b-red">Detected</span>'):'<span class="badge b-gray">N/A</span>';return'<tr><td><strong style="color:#1a3a6e">'+eh(r.cyto)+'</strong></td><td>'+eh(r.name)+'</td><td>'+eh(r.age)+'</td><td>'+fd(r.dr)+'</td><td>'+cB+'</td><td>'+hB+'</td><td style="text-align:right;font-weight:700;color:#1a7a3c">'+(r.price?parseInt(r.price).toLocaleString():'—')+'</td></tr>'}).join('')+
-    '<tr style="background:#f7f9fd;font-weight:700"><td colspan="6" style="text-align:right;padding:10px 12px;color:#1a3a6e">รวม '+d.count+' ราย</td><td style="text-align:right;padding:10px 12px;color:#1a7a3c;font-size:15px">'+d.total.toLocaleString()+' ฿</td></tr>'+
-    '</tbody></table></div></div>';
+  var mnames=['','มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+
+  // Filter by dc (date collected) as primary date
+  var filtered=REC.filter(function(r){
+    var dateStr=r.dc||r.dr||'';
+    if(!dateStr) return false;
+    var p=dateStr.split('-');
+    if(p.length!==3) return false;
+    var ok=parseInt(p[0])===yAD&&parseInt(p[1])===m;
+    if(filterClinic) ok=ok&&(r.clinic===filterClinic);
+    return ok;
   });
-  document.getElementById('bill-clinics').innerHTML=html;
+
+  var grand=document.getElementById('bill-grand');
+  var clinicsDiv=document.getElementById('bill-clinics');
+  var empty=document.getElementById('bill-empty');
+  var result=document.getElementById('bill-result');
+
+  if(!filtered.length){
+    grand.style.display='none'; clinicsDiv.innerHTML='';
+    empty.style.display='block'; result.style.display='none';
+    return;
+  }
+  empty.style.display='none'; result.style.display='block';
+
+  // Group by clinic
+  var clinicMap={};
+  filtered.forEach(function(r){
+    var cl=r.clinic||'(ไม่ระบุคลินิก)';
+    if(!clinicMap[cl]) clinicMap[cl]={records:[],total:0,count:0};
+    var price=parseFloat(r.price)||0;
+    clinicMap[cl].records.push(r);
+    clinicMap[cl].total+=price;
+    clinicMap[cl].count++;
+  });
+
+  var grandTotal=filtered.reduce(function(s,r){return s+(parseFloat(r.price)||0);},0);
+  var grandCount=filtered.length;
+
+  // Grand summary
+  grand.style.display='block';
+  grand.innerHTML=
+    '<div class="card-head">💰 สรุปรวม — '+(filterClinic?filterClinic:'ทุกคลินิก')+' '+mnames[m]+' '+y+'</div>'+
+    '<div class="card-body"><div class="grid g3">'+
+      '<div style="background:#f7f9fd;border-radius:8px;padding:14px;text-align:center">'+
+        '<div style="font-size:12px;color:#6b7a99;margin-bottom:4px">จำนวนราย</div>'+
+        '<div style="font-size:28px;font-weight:800;color:#1a3a6e">'+grandCount+'</div>'+
+      '</div>'+
+      '<div style="background:#f7f9fd;border-radius:8px;padding:14px;text-align:center">'+
+        '<div style="font-size:12px;color:#6b7a99;margin-bottom:4px">จำนวนคลินิก</div>'+
+        '<div style="font-size:28px;font-weight:800;color:#1a3a6e">'+Object.keys(clinicMap).length+'</div>'+
+      '</div>'+
+      '<div style="background:#EAF3DE;border-radius:8px;padding:14px;text-align:center">'+
+        '<div style="font-size:12px;color:#27500A;margin-bottom:4px">ยอดรวมทั้งหมด</div>'+
+        '<div style="font-size:28px;font-weight:800;color:#1a7a3c">'+grandTotal.toLocaleString()+' ฿</div>'+
+      '</div>'+
+    '</div></div>';
+
+  // Per-clinic tables
+  var html='';
+  Object.keys(clinicMap).forEach(function(cl){
+    var d=clinicMap[cl];
+    html+='<div class="card" style="margin-bottom:14px">'+
+      '<div class="card-head">🏥 '+eh(cl)+
+        '<span style="margin-left:auto;font-size:13px;color:#1a7a3c;font-weight:700">'+d.count+' ราย | '+d.total.toLocaleString()+' ฿</span>'+
+      '</div>'+
+      '<div class="card-body">'+
+      '<table class="rec-table"><thead><tr>'+
+        '<th>CYTO No.</th><th>ชื่อ-สกุล</th><th>อายุ</th>'+
+        '<th>วันที่รับ</th><th>ประเภทตรวจ</th><th>ผล Pap</th><th>HPV</th>'+
+        '<th style="text-align:right">ค่าตรวจ (฿)</th>'+
+      '</tr></thead><tbody>'+
+      d.records.map(function(r){
+        var cB=r.cat==='Negative for Intraepithelial Lesion or Malignancy'?
+          '<span class="badge b-green">Negative</span>':
+          '<span class="badge b-red">'+(r.cat?r.cat.substring(0,8):'—')+'</span>';
+        var hB=r.hi==='yes'?(r.hr==='Nondetected'?
+          '<span class="badge b-green">Non</span>':
+          '<span class="badge b-red">Det</span>'):
+          '<span class="badge b-gray">N/A</span>';
+        var eB='<span class="badge b-gray" style="font-size:10px">'+eh(r.examLabel||r.examType||'—')+'</span>';
+        return '<tr>'+
+          '<td><strong style="color:#1a3a6e">'+eh(r.cyto)+'</strong></td>'+
+          '<td>'+eh(r.name)+'</td>'+
+          '<td>'+eh(r.age)+'</td>'+
+          '<td>'+fd(r.dc||r.dr)+'</td>'+
+          '<td>'+eB+'</td>'+
+          '<td>'+cB+'</td>'+
+          '<td>'+hB+'</td>'+
+          '<td style="text-align:right;font-weight:700;color:#1a7a3c">'+
+            (r.price?parseInt(r.price).toLocaleString():'—')+
+          '</td></tr>';
+      }).join('')+
+      '<tr style="background:#f7f9fd;font-weight:700">'+
+        '<td colspan="7" style="text-align:right;padding:10px 12px;color:#1a3a6e">รวม '+d.count+' ราย</td>'+
+        '<td style="text-align:right;padding:10px 12px;color:#1a7a3c;font-size:15px">'+d.total.toLocaleString()+' ฿</td>'+
+      '</tr>'+
+      '</tbody></table></div></div>';
+  });
+
+  clinicsDiv.innerHTML=html;
 }
+
 function printBilling(){
   var m=parseInt(document.getElementById('bill-month').value); var y=parseInt(document.getElementById('bill-year').value);
   var grand=document.getElementById('bill-grand').innerHTML; var clinics=document.getElementById('bill-clinics').innerHTML;
@@ -1358,7 +1594,20 @@ function printBilling(){
     '<scr'+'ipt>window.onload=function(){setTimeout(function(){window.print();},300);}<\/scr'+'ipt></body></html>';
   w.document.write(html);w.document.close();
 }
-function initBillingPage(){var now=new Date();document.getElementById('bill-month').value=now.getMonth()+1;document.getElementById('bill-year').value=now.getFullYear()+543}
+function initBillingPage(){
+  var now=new Date();
+  document.getElementById('bill-month').value=now.getMonth()+1;
+  document.getElementById('bill-year').value=now.getFullYear()+543;
+  // Fill clinic select
+  var cs=document.getElementById('bill-clinic');
+  if(cs){
+    cs.innerHTML='<option value="">— ทุกคลินิก —</option>';
+    (CFG.clinics||[]).forEach(function(c){
+      var n=typeof c==='object'?c.name||'':c;
+      cs.innerHTML+='<option value="'+eh(n)+'">'+eh(n)+'</option>';
+    });
+  }
+}
 
 // ─── SETTINGS ─────────────────────────────────────
 function loadSettings(){
@@ -1390,6 +1639,49 @@ async function saveSettings(){
   ['rn','rt','rl','an','at','al'].forEach(function(k){var e=document.getElementById('s-'+k);if(e)CFG[k]=e.value.trim()});
   saveLocal(); fillClinicSelect(); fillDefaultStaff();
   toast('บันทึกการตั้งค่าแล้ว');
+}
+
+
+// === EXAM TYPE & PRICING ===
+var EXAM_DEF = {"pap_hpv": {"hasPap": true, "hasHpv": true, "label": "ThinPrep PAP + HPV DNA"}, "pap_only": {"hasPap": true, "hasHpv": false, "label": "ThinPrep PAP"}, "pap_prog": {"hasPap": true, "hasHpv": false, "label": "ThinPrep PAP โปรแกรม"}, "hpv_only": {"hasPap": false, "hasHpv": true, "label": "HPV DNA"}, "hpv_prog": {"hasPap": false, "hasHpv": true, "label": "HPV โปรแกรม"}, "pap1": {"hasPap": true, "hasHpv": false, "label": "PAP Smear 1"}, "pap2": {"hasPap": true, "hasHpv": false, "label": "PAP Smear 2"}, "biopsy": {"hasPap": false, "hasHpv": false, "label": "Biopsy (ชิ้นเนื้อ)"}};
+var DEFAULT_PRICES = {"pap_hpv": 1200, "pap_only": 600, "pap_prog": 280, "hpv_only": 800, "hpv_prog": 750, "pap1": 70, "pap2": 80, "biopsy": 500};
+
+function getClinicPrices(cname){
+  var p=Object.assign({},DEFAULT_PRICES);
+  (CFG.clinics||[]).forEach(function(c){
+    var n=typeof c==='object'?c.name||'':c;
+    if(n===cname&&typeof c==='object'&&c.prices) p=Object.assign({},DEFAULT_PRICES,c.prices);
+  });
+  return p;
+}
+function onExamTypeChange(examType){
+  var clinic=document.getElementById('f-clinic').value;
+  var prices=getClinicPrices(clinic);
+  document.getElementById('f-price').value=prices[examType]||'';
+  // Reset HPV result when switching exam type
+  if(!def.hasHpv){
+    var hrNon=document.querySelector('input[name="hr"][value="Nondetected"]');
+    if(hrNon){hrNon.checked=true;hrNon.parentElement.classList.add('sel');}
+    document.querySelectorAll('input[name="hr"]').forEach(function(r){if(r.value!=='Nondetected')r.parentElement.classList.remove('sel');});
+  }
+  var def=EXAM_DEF[examType]||{hasPap:true,hasHpv:false};
+  var hc=document.getElementById('hpv-det');
+  var cw=document.getElementById('sec-cyto-wrap');
+  var bn=document.getElementById('biopsy-note');
+  if(hc) hc.style.display=def.hasHpv?'block':'none';
+  if(cw) cw.style.display=(examType==='biopsy')?'none':'block';
+  if(bn) bn.style.display=(examType==='biopsy')?'block':'none';
+}
+function onClinicChange(){
+  var et=R('examType')||'pap_hpv';
+  var cl=document.getElementById('f-clinic').value;
+  if(cl) document.getElementById('f-price').value=getClinicPrices(cl)[et]||'';
+}
+function updateClinicPrice(ci,pk,val){
+  if(!CFG.clinics||!CFG.clinics[ci]) return;
+  if(typeof CFG.clinics[ci]==='string') CFG.clinics[ci]={name:CFG.clinics[ci],email:'',prices:{}};
+  if(!CFG.clinics[ci].prices) CFG.clinics[ci].prices={};
+  CFG.clinics[ci].prices[pk]=parseFloat(val)||0;
 }
 
 // ─── NAVIGATION ───────────────────────────────────
@@ -1510,7 +1802,7 @@ function sendEmailClinic(r){
     divider,
     'ผล Cytology   : '+catShort
   ];
-  if(r.orgs&&r.orgs.length) body.push('Organism      : '+r.orgs.join(', '));
+  var _org=r.cat==='Epithelial Cell Abnormality'?(r.orgsEpi&&r.orgsEpi.length?r.orgsEpi:r.orgs):r.orgs; if(_org&&_org.length) body.push('Organism      : '+_org.join(', '));
   body.push(divider);
   hpvArr.forEach(function(h){body.push(h);});
   body=body.concat([divider,'Reported by   : '+(r.rn||'')+' ('+(r.rt||'')+')',
@@ -1547,7 +1839,7 @@ function sendLineClinic(r){
     '================================',
     '\u{1F52C} Cytology: '+catShort
   ];
-  if(r.orgs&&r.orgs.length) msgArr.push('\u{1F9A0} Organism: '+r.orgs.join(', '));
+  var _morg=r.cat==='Epithelial Cell Abnormality'?(r.orgsEpi&&r.orgsEpi.length?r.orgsEpi:r.orgs):r.orgs; if(_morg&&_morg.length) msgArr.push('{1F9A0} Organism: '+_morg.join(', '));
   hpvArr.forEach(function(h){msgArr.push(h);});
   msgArr.push('================================');
   msgArr.push('\u270D\uFE0F '+(r.rn||'')+' ('+(r.rt||'')+')');
