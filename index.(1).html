@@ -936,7 +936,21 @@ async function jbInit(){
 async function pushToJb(){
   if(!JB_KEY||!JB_BIN_ID) return;
   try{
-    await jbRequest('PUT','/b/'+JB_BIN_ID, { records: REC, version: Date.now() });
+    // ส่งทั้ง records และ cfg (clinics, staff) ขึ้น Cloud
+    var payload = {
+      records: REC,
+      cfg: {
+        clinics: CFG.clinics||[],
+        clinicEmails: CFG.clinicEmails||{},
+        rn: CFG.rn, rt: CFG.rt, rl: CFG.rl,
+        an: CFG.an, at: CFG.at, al: CFG.al,
+        l1: CFG.l1, l2: CFG.l2,
+        nth: CFG.nth, nen: CFG.nen,
+        footer: CFG.footer
+      },
+      version: Date.now()
+    };
+    await jbRequest('PUT','/b/'+JB_BIN_ID, payload);
     setSyncStatus(true,'ซิงค์แล้ว — '+new Date().toLocaleTimeString('th-TH'));
   } catch(e){
     setSyncStatus(false,'ซิงค์ไม่สำเร็จ: '+e.message);
@@ -949,9 +963,23 @@ async function pullFromJb(silent){
     var res = await jbRequest('GET','/b/'+JB_BIN_ID+'/latest');
     if(res.record && res.record.records){
       REC = res.record.records;
+      // ดึง cfg (clinics, staff) จาก Cloud มาด้วย
+      if(res.record.cfg){
+        var c = res.record.cfg;
+        if(c.clinics && c.clinics.length) CFG.clinics = c.clinics;
+        if(c.clinicEmails) CFG.clinicEmails = c.clinicEmails;
+        if(c.rn) CFG.rn=c.rn; if(c.rt) CFG.rt=c.rt; if(c.rl) CFG.rl=c.rl;
+        if(c.an) CFG.an=c.an; if(c.at) CFG.at=c.at; if(c.al) CFG.al=c.al;
+        if(c.l1) CFG.l1=c.l1; if(c.l2) CFG.l2=c.l2;
+        if(c.nth) CFG.nth=c.nth; if(c.nen) CFG.nen=c.nen;
+        if(c.footer) CFG.footer=c.footer;
+      }
       var rStr=JSON.stringify(REC);
-      ['cp5_rec','cp7_rec','cy3_r'].forEach(function(k){localStorage.setItem(k,rStr);});
+      ['cp5_rec','cp7_rec','cy3_r'].forEach(function(k){
+        try{localStorage.setItem(k,rStr);}catch(e){}
+      });
       saveLocal();
+      renderClinics();
       updateNextNo();
       renderRec();
       updateNextNo();
