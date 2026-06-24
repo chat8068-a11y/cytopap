@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; connect-src * https://api.jsonbin.io;">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap" rel="stylesheet">
 <title>CytoPAP System v36 — Cervical Cytology Lab Management</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -1282,7 +1284,7 @@ function buildReport(d){
   var rmkDiv=d.rmk?'<div style="border:1px solid #ccc;padding:3pt 6pt;font-size:13pt;font-weight:bold;color:#333;margin-bottom:4pt">Remarks: '+eh(d.rmk)+'</div>':'';
 
   return '<div style="'+
-    'font-family:\'TH Sarabun New\',\'Sarabun\',\'Cordia New\',\'Leelawadee UI\',serif;'+
+    'font-family:\'Sarabun\',\'TH Sarabun New\',\'Leelawadee UI\',\'Leelawadee\',\'Tahoma\',serif;'+
     'font-size:13pt;font-weight:bold;line-height:1.4;color:#000;background:#fff;'+
     'padding:12mm 14mm 10mm 14mm;'+
     'width:210mm;min-height:277mm;box-sizing:border-box;'+
@@ -1383,11 +1385,11 @@ function printDoc(d){
   try{reportHtml=buildReport(d);}
   catch(e){toast('เกิดข้อผิดพลาดในการสร้างรายงาน: '+e.message,'e');return;}
   var fn=suggestFilename(d);
-  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>'+fn+'</title>'+
+  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap" rel="stylesheet"><title>'+fn+'</title>'+
     '<style>'+
     '@page{size:A4;margin:0}'+
     'html,body{margin:0;padding:0;width:210mm}'+
-    'body{font-family:"TH Sarabun New","Sarabun","Cordia New","Leelawadee UI",serif}'+
+    'body{font-family:"Sarabun","TH Sarabun New","Leelawadee UI","Leelawadee","Tahoma",serif}'+
     '*{box-sizing:border-box;-webkit-print-color-adjust:exact}'+
     'div,table,td{page-break-inside:avoid}'+
     '</style>'+
