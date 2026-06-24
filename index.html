@@ -772,6 +772,10 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         เพิ่มคลินิกใหม่
       </button>
+      <button class="add-cl" onclick="importClinicsFromText()" style="margin-left:8px;background:#1a3a6e;color:#fff;border:none">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="8 17 12 21 16 17"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.88 18.09A5 5 0 0018 9h-1.26A8 8 0 103 16.29"/></svg>
+        นำเข้าคลินิกจาก PC
+      </button>
     </div>
   </div>
 
@@ -1666,6 +1670,30 @@ function renderClinicEntries(){
 }
 function addCl(){if(!CFG.clinics)CFG.clinics=[];CFG.clinics.push({name:'',email:''});renderClinicEntries();var ins=document.querySelectorAll('#cl-ent input');if(ins.length)ins[ins.length-1].focus()}
 function removeCl(i){CFG.clinics.splice(i,1);renderClinicEntries()}
+
+// ── นำเข้าคลินิกจาก PC (รายชื่อที่บันทึกไว้ใน PC) ────────────────────
+var PC_CLINICS = [
+  'พญ.สุชาดา โมรนครัฐ',
+  'พญ.ญาณี กัมนิธิกุล (ตำรนกฤษอัศ)',
+  'พญ.ญาดา สัปตรังตระภูก',
+  'กาญจน์กนก-หมออีรินพ',
+  'พญ.เพลิ โดชาว',
+  'นพ.นิธานิ เวชสาคร',
+  'พญ.พรรณี หรัสยุ',
+  'หมอกาญจน์กนก-หมออีรินพ',
+  'คลินิกเวชกรรม สุขภาพดี'
+];
+function importClinicsFromText(){
+  if(!CFG.clinics) CFG.clinics=[];
+  var added=0;
+  PC_CLINICS.forEach(function(name){
+    var exists=CFG.clinics.some(function(c){return (c.name||c)===name;});
+    if(!exists){ CFG.clinics.push({name:name,email:''}); added++; }
+  });
+  renderClinicEntries();
+  if(added>0) toast('นำเข้า '+added+' คลินิกเรียบร้อย — กด "บันทึกการตั้งค่า" เพื่อบันทึก');
+  else toast('คลินิกทั้งหมดมีอยู่แล้ว');
+}
 function updateClinic(i,field,val){
   if(typeof CFG.clinics[i]==='string') CFG.clinics[i]={name:CFG.clinics[i],email:''};
   if(field===0) CFG.clinics[i].name=val; else CFG.clinics[i].email=val;
