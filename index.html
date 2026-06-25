@@ -548,6 +548,24 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
 <div id="page-records" class="page">
   <div class="page-title">ประวัติผลตรวจ</div>
   <div class="page-sub">ผลการตรวจทั้งหมดที่บันทึกไว้ในระบบ</div>
+
+  <div class="card" style="margin-bottom:12px">
+    <div class="card-head">🔄 แก้ไขชื่อคลินิกแบบ Batch</div>
+    <div class="card-body" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+      <div style="flex:1;min-width:180px">
+        <label style="font-size:12px;font-weight:600;color:#6b7a99;display:block;margin-bottom:4px">ชื่อคลินิกเดิม (ที่ผิด) — เลือกจากรายการ</label>
+        <select id="batch-old-sel" style="width:100%;padding:8px 10px;border:1px solid #d0d9ee;border-radius:8px;font-size:13px;background:#fff">
+          <option value="">— เลือกชื่อเดิมที่ผิด —</option>
+        </select>
+      </div>
+      <div style="flex:1;min-width:180px">
+        <label style="font-size:12px;font-weight:600;color:#6b7a99;display:block;margin-bottom:4px">ชื่อคลินิกใหม่ (ที่ถูกต้อง) — พิมพ์เอง</label>
+        <input id="batch-new-txt" type="text" placeholder="พิมพ์ชื่อใหม่ที่ถูกต้อง..." style="width:100%;padding:8px 10px;border:1px solid #d0d9ee;border-radius:8px;font-size:13px">
+      </div>
+      <button onclick="batchUpdateClinic()" style="background:#1a5276;color:#fff;border:none;padding:9px 20px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">✅ แก้ไขทั้งหมด</button>
+    </div>
+  </div>
+
   <div class="card">
     <div class="card-body">
       <div class="rec-search">
@@ -566,6 +584,64 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
         ยังไม่มีผลตรวจที่บันทึกไว้
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── PAGE: BATCH PRINT ── -->
+<div id="page-batch" class="page">
+  <div class="page-title">พิมพ์ตามช่วง CYTO</div>
+  <div class="page-sub">เลือกช่วงหมายเลข CYTO LOHY แล้วพิมพ์ใบรายงานพร้อมกัน</div>
+  <div class="card">
+    <div class="card-head">🔍 ระบุช่วงหมายเลข CYTO LOHY</div>
+    <div class="card-body">
+      <div class="grid g3">
+        <div class="field">
+          <label>CYTO No. เริ่มต้น</label>
+          <input id="batch-from" type="number" placeholder="เช่น 400" min="1">
+        </div>
+        <div class="field">
+          <label>CYTO No. สิ้นสุด</label>
+          <input id="batch-to" type="number" placeholder="เช่น 500" min="1">
+        </div>
+        <div class="field" style="display:flex;align-items:flex-end">
+          <button class="btn btn-primary" onclick="previewBatch()" style="width:100%">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            ค้นหา
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="batch-empty" class="empty-state" style="display:none">ไม่พบรายการในช่วงที่ระบุ</div>
+
+  <div id="batch-list" style="display:none">
+    <div class="card">
+      <div class="card-head" style="display:flex;justify-content:space-between;align-items:center">
+        <span id="batch-count"></span>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-outline btn-sm" onclick="selectAllBatch(true)">เลือกทั้งหมด</button>
+          <button class="btn btn-outline btn-sm" onclick="selectAllBatch(false)">ยกเลิกทั้งหมด</button>
+        </div>
+      </div>
+      <div class="card-body" style="padding:0;overflow-x:auto">
+        <table class="rec-table">
+          <thead>
+            <tr>
+              <th>CYTO No.</th><th>ชื่อ-สกุล</th><th>อายุ</th><th>คลินิก</th>
+              <th>วันที่รายงาน</th><th>ผล PAP</th><th>HPV</th><th>✓</th>
+            </tr>
+          </thead>
+          <tbody id="batch-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="printBatch()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+        พิมพ์รายการที่เลือก
+      </button>
     </div>
   </div>
 </div>
@@ -1484,6 +1560,7 @@ function previewBatch(){
   var to=parseInt(document.getElementById('batch-to').value);
   if(!from||!to){toast('กรุณากรอกช่วงหมายเลข','e');return}
   if(from>to){toast('หมายเลขเริ่มต้นต้องน้อยกว่าหมายเลขสิ้นสุด','e');return}
+  if(!REC||!REC.length){toast('ยังไม่มีข้อมูล — กรุณาซิงค์ข้อมูลจาก Cloud ก่อนครับ','e');return}
   var matched=REC.filter(function(r){var n=parseInt(r.cyto)||0;return n>=from&&n<=to}).sort(function(a,b){return(parseInt(a.cyto)||0)-(parseInt(b.cyto)||0)});
   var list=document.getElementById('batch-list'); var empty=document.getElementById('batch-empty');
   var cnt=document.getElementById('batch-count');
@@ -1670,20 +1747,48 @@ function renderClinicEntries(){
     c.appendChild(d);
   });
 }
+function populateBatchNew(){
+  var sel=document.getElementById('batch-old-sel');
+  if(!sel) return;
+  var cur=sel.value;
+  // รวบรวมชื่อคลินิกที่มีใน records ทั้งหมด (unique)
+  var names={};
+  (REC||[]).forEach(function(r){ if(r.clinic) names[r.clinic]=true; });
+  sel.innerHTML='<option value="">— เลือกชื่อเดิมที่ผิด —</option>';
+  Object.keys(names).sort().forEach(function(n){
+    var o=document.createElement('option');
+    o.value=n; o.textContent=n;
+    if(n===cur) o.selected=true;
+    sel.appendChild(o);
+  });
+}
+async function batchUpdateClinic(){
+  var oldName=document.getElementById('batch-old-sel').value.trim();
+  var newName=document.getElementById('batch-new-txt').value.trim();
+  if(!oldName||!newName){toast('กรุณากรอกชื่อเดิมและเลือกชื่อใหม่','e');return;}
+  var count=0;
+  REC.forEach(function(r){
+    if((r.clinic||'').trim()===oldName){r.clinic=newName;count++;}
+  });
+  if(count===0){toast('ไม่พบ record ที่มีชื่อคลินิก "'+oldName+'"','e');return;}
+  saveLocal();
+  await pushToJb();
+  renderRec();
+  document.getElementById('batch-new-txt').value=''; populateBatchNew();
+  toast('แก้ไขสำเร็จ '+count+' record — "'+oldName+'" → "'+newName+'"');
+}
 function addCl(){if(!CFG.clinics)CFG.clinics=[];CFG.clinics.push({name:'',email:''});renderClinicEntries();var ins=document.querySelectorAll('#cl-ent input');if(ins.length)ins[ins.length-1].focus()}
 function removeCl(i){CFG.clinics.splice(i,1);renderClinicEntries()}
 
 // ── นำเข้าคลินิกจาก PC (รายชื่อที่บันทึกไว้ใน PC) ────────────────────
 var PC_CLINICS = [
-  'พญ.สุชาดา โมรนครัฐ',
-  'พญ.ญาณี กัมนิธิกุล (ตำรนกฤษอัศ)',
-  'พญ.ญาดา สัปตรังตระภูก',
-  'กาญจน์กนก-หมออีรินพ',
-  'พญ.เพลิ โดชาว',
-  'นพ.นิธานิ เวชสาคร',
-  'พญ.พรรณี หรัสยุ',
-  'หมอกาญจน์กนก-หมออีรินพ',
-  'คลินิกเวชกรรม สุขภาพดี'
+  'พญ.สุชาดา โมระเสริฐ',
+  'พญ.ญาณี ลีนะนิธิกุล (คำรณฤทธิศร)',
+  'กาญจน์กนก-หมอธีรนพ',
+  'พญ.ญาดา สัปตรั้งตระกูล',
+  'พญ.พรรณี ทวีสุข',
+  'นพ.ณัฐวุฒิ เวชศาสตร์',
+  'พญ.ยุพดี โตขาว'
 ];
 function importClinicsFromText(){
   if(!CFG.clinics) CFG.clinics=[];
@@ -1756,7 +1861,7 @@ function showPage(p){
   document.getElementById('page-'+p).classList.add('active');
   document.querySelectorAll('.nav-btn').forEach(function(b){b.classList.remove('active')});
   document.getElementById('nb-'+p).classList.add('active');
-  if(p==='records') renderRec();
+  if(p==='records'){ renderRec(); populateBatchNew(); } if(p==='batch'){ document.getElementById('batch-list').style.display='none'; document.getElementById('batch-empty').style.display='none'; }
   if(p==='settings') loadSettings();
   if(p==='billing') initBillingPage();
   if(p==='stats') renderStats();
