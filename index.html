@@ -920,6 +920,9 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
 // ══════════════════════════════════════════════════
 var REC = [], CFG = {};
 var JB_KEY = '', JB_BIN_ID = '6a3e2226da38895dfe0148ff';
+// Firebase Config
+var FB_URL = 'https://cytopap-lab-default-rtdb.firebaseio.com';
+var FB_PATH = '/cytopap/data.json';
 var syncOnline = false;
 
 // ─── LOCAL STORAGE ────────────────────────────────
@@ -1020,9 +1023,7 @@ async function jbInit(){
 }
 
 async function pushToJb(){
-  if(!JB_KEY||!JB_BIN_ID) return;
   try{
-    // ส่งทั้ง records และ cfg (clinics, staff) ขึ้น Cloud
     var payload = {
       records: REC,
       cfg: {
@@ -1036,7 +1037,12 @@ async function pushToJb(){
       },
       version: Date.now()
     };
-    await jbRequest('PUT','/b/'+JB_BIN_ID, payload);
+    var res = await fetch(FB_URL+FB_PATH, {
+      method: 'PUT',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(payload)
+    });
+    if(!res.ok) throw new Error('HTTP '+res.status);
     setSyncStatus(true,'ซิงค์แล้ว — '+new Date().toLocaleTimeString('th-TH'));
   } catch(e){
     setSyncStatus(false,'ซิงค์ไม่สำเร็จ: '+e.message);
@@ -1044,14 +1050,14 @@ async function pushToJb(){
 }
 
 async function pullFromJb(silent){
-  if(!JB_KEY||!JB_BIN_ID){ if(!silent) toast('ยังไม่ได้ตั้งค่า Cloud Sync','e'); return; }
   try{
-    var res = await jbRequest('GET','/b/'+JB_BIN_ID+'/latest');
-    if(res.record && res.record.records){
-      REC = res.record.records;
-      // ดึง cfg (clinics, staff) จาก Cloud มาด้วย
-      if(res.record.cfg){
-        var c = res.record.cfg;
+    var res = await fetch(FB_URL+FB_PATH+'?t='+Date.now());
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    var data = await res.json();
+    if(data && data.records){
+      REC = data.records;
+      if(data.cfg){
+        var c = data.cfg;
         if(c.clinics && c.clinics.length) CFG.clinics = c.clinics;
         if(c.clinicEmails) CFG.clinicEmails = c.clinicEmails;
         if(c.rn) CFG.rn=c.rn; if(c.rt) CFG.rt=c.rt; if(c.rl) CFG.rl=c.rl;
@@ -1060,107 +1066,21 @@ async function pullFromJb(silent){
         if(c.nth) CFG.nth=c.nth; if(c.nen) CFG.nen=c.nen;
         if(c.footer) CFG.footer=c.footer;
       }
-      var rStr=JSON.stringify(REC);
-      ['cp5_rec','cp7_rec','cy3_r'].forEach(function(k){
-        try{localStorage.setItem(k,rStr);}catch(e){}
-      });
+      try{
+        var rStr=JSON.stringify(REC);
+        ['cp5_rec','cp7_rec'].forEach(function(k){localStorage.setItem(k,rStr);});
+      }catch(e){}
       saveLocal();
       renderClinicEntries();
       updateNextNo();
       renderRec();
-      updateNextNo();
       setSyncStatus(true,'ดึงข้อมูลสำเร็จ — '+new Date().toLocaleTimeString('th-TH')+' ('+REC.length+' รายการ)');
       if(!silent) toast('ดึงข้อมูลจาก Cloud สำเร็จ — '+REC.length+' รายการ');
     }
-  } catch(e){
+  }catch(e){
     setSyncStatus(false,'ดึงข้อมูลไม่สำเร็จ: '+e.message);
     if(!silent) toast('ดึงข้อมูลไม่สำเร็จ: '+e.message,'e');
-  }
-}
-
-// ─── SETTINGS: JSONBIN ────────────────────────────
-async function saveJbConfig(){
-  var key = document.getElementById('jb-key').value.trim();
-  if(!key){ toast('กรุณากรอก Secret Key','e'); return; }
-  CFG.jbKey = key; JB_KEY = key;
-  CFG.jbBinId = ''; JB_BIN_ID = ''; // reset bin to create fresh
-  saveLocal();
-  showJbStatus('กำลังเชื่อมต่อ...','#6b7a99');
-  await jbInit();
-  if(syncOnline){
-    showJbStatus('✅ เชื่อมต่อสำเร็จ! กำลังดึงข้อมูล...','#1a7a3c');
-    toast('เชื่อมต่อ Cloud Sync สำเร็จ! กำลังดึงข้อมูล...');
-    await pullFromJb(false);
-    showJbStatus('✅ เชื่อมต่อสำเร็จ! ข้อมูลซิงค์ข้ามเครื่องได้แล้ว — '+REC.length+' รายการ','#1a7a3c');
-  } else {
-    showJbStatus('❌ เชื่อมต่อไม่ได้ — ตรวจสอบ Secret Key อีกครั้ง','#e53e3e');
-  }
-}
-
-async function testJbConnection(){
-  if(!JB_KEY){ toast('กรุณากรอก Secret Key ก่อน','e'); return; }
-  showJbStatus('กำลังทดสอบ...','#6b7a99');
-  try{
-    await jbRequest('GET','/b/'+JB_BIN_ID+'/latest');
-    showJbStatus('✅ เชื่อมต่อสำเร็จ!','#1a7a3c');
-    toast('เชื่อมต่อสำเร็จ ✓');
-  } catch(e){
-    showJbStatus('❌ ไม่สามารถเชื่อมต่อ: '+e.message,'#e53e3e');
-    toast('เชื่อมต่อไม่ได้','e');
-  }
-}
-
-function clearJbConfig(){
-  if(!confirm('ปิดการซิงค์ Cloud และใช้ Local Storage แทนใช่ไหม?')) return;
-  CFG.jbKey=''; CFG.jbBinId=''; JB_KEY=''; JB_BIN_ID='';
-  saveLocal(); setSyncStatus(false,'ใช้ Local Storage (ไม่ซิงค์ข้ามเครื่อง)');
-  showJbStatus('','#6b7a99');
-  toast('ปิด Cloud Sync แล้ว');
-}
-
-function showJbStatus(msg, color){
-  var el = document.getElementById('jb-status');
-  if(!el) return;
-  el.style.display = msg ? 'block' : 'none';
-  el.style.background = color==='#1a7a3c'?'#EAF3DE':color==='#e53e3e'?'#FCEBEB':'#f7f9fd';
-  el.style.color = color;
-  el.style.border = '1px solid '+color;
-  el.textContent = msg;
-}
-
-// ─── TDESC ────────────────────────────────────────
-var TDESC = {
-  v1:"The Diagnostic Kit is an in vitro nucleic acid amplification test for the qualitative detection of high-risk human papilloma virus (HPV type 16, 18, 31, 33, 35, 39, 45, 51, 52, 53, 56, 58, 59, 66, 68) present in exfoliated cells from female’s cervix and can identify the genotype of virus. The test result can be used as an aid in the diagnosis of a high-risk HPV infection. The lower detection limit is determined to be 400 copies/mL for each genotype.",
-  v2:"MolecuTech REBA HPV-ID® is a Reversed blot Hybridization Assay System for genotyping human papilloma virus(HPV) which is a causative pathogen of cervical cancer. HPV genotypes detectable by the MolecuTech REBA HPV-ID® are the 18 high-risk HPV types (16,18,26,31,33,35,39,45,51,52,53,56,58,59,66,68,69,73), 1 probable high-risk HPV type (34) and the 13 low-risk HPV types (6,11,32,40,42,43,44,54,70,72,81,84,87). Genetic target of the kit is a polymorphic L1 gene which is expressed at the late stage of infection cycles in the host cells. Limit of Detection(LoD:copy No./reaction) of each genotype of HPV is 10³copy/rxn."
-};
-
-// ─── INIT ─────────────────────────────────────────
-function init(){
-  loadData();
-  setupPills();
-  var today = new Date().toISOString().split('T')[0];
-  document.getElementById('f-dc').value = today;
-  document.getElementById('f-dr').value = today;
-  fillClinicSelect();
-  updateNextNo();
-  fillDefaultStaff();
-  // Auto-fill price on load
-  setTimeout(function(){
-    var et=R('examType')||'pap_hpv';
-    onExamTypeChange(et);
-  },300);
-  setSyncStatus(false,'กำลังเชื่อมต่อ...');
-  // Auto-migrate: if cp5_rec empty but cp7_rec has data, copy it
-  try{
-    var cp5 = JSON.parse(localStorage.getItem('cp5_rec')||'[]');
-    var cp7 = JSON.parse(localStorage.getItem('cp7_rec')||'[]');
-    if(cp5.length===0 && cp7.length>0){
-      localStorage.setItem('cp5_rec', JSON.stringify(cp7));
-      REC = cp7;
-      renderRec && typeof renderRec === 'function' && renderRec();
-      console.log('Auto-migrated',cp7.length,'records from cp7 to cp5');
-    }
-  }catch(e){}
+  }(e){}
   jbInit();
 }
 
@@ -1816,6 +1736,17 @@ function importClinicsFromText(){
 function updateClinic(i,field,val){
   if(typeof CFG.clinics[i]==='string') CFG.clinics[i]={name:CFG.clinics[i],email:''};
   if(field===0) CFG.clinics[i].name=val; else CFG.clinics[i].email=val;
+}
+async function testJbConnection(){
+  try{
+    var res = await fetch(FB_URL+'/.json?shallow=true&t='+Date.now());
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    toast('เชื่อมต่อ Firebase สำเร็จ ✅');
+    setSyncStatus(true,'เชื่อมต่อสำเร็จ');
+  }catch(e){
+    toast('เชื่อมต่อไม่สำเร็จ: '+e.message,'e');
+    setSyncStatus(false,'เชื่อมต่อไม่สำเร็จ');
+  }
 }
 async function saveSettings(){
   ['l1','l2','nth','nen','footer'].forEach(function(k){var e=document.getElementById('s-'+k);if(e)CFG[k]=e.value.trim()});
