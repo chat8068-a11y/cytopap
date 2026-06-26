@@ -1724,12 +1724,17 @@ function initBillingPage(){
   document.getElementById('bill-month').value=now.getMonth()+1;
   document.getElementById('bill-month-to').value=now.getMonth()+1;
   document.getElementById('bill-year').value=now.getFullYear()+543;
-  // Fill clinic select
+  // Fill clinic select จาก records จริงๆ ไม่ใช่จาก CFG
   var cs=document.getElementById('bill-clinic');
   if(cs){
     cs.innerHTML='<option value="">— ทุกคลินิก —</option>';
-    (CFG.clinics||[]).forEach(function(c){
-      var n=typeof c==='object'?c.name||'':c;
+    // ดึงชื่อคลินิก unique จาก REC
+    var clinicSet={};
+    (REC||[]).forEach(function(r){
+      var n=(r.clinic||'').trim();
+      if(n) clinicSet[n]=true;
+    });
+    Object.keys(clinicSet).sort().forEach(function(n){
       cs.innerHTML+='<option value="'+eh(n)+'">'+eh(n)+'</option>';
     });
   }
