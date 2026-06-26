@@ -1080,7 +1080,7 @@ async function pullFromJb(silent){
   }catch(e){
     setSyncStatus(false,'ดึงข้อมูลไม่สำเร็จ: '+e.message);
     if(!silent) toast('ดึงข้อมูลไม่สำเร็จ: '+e.message,'e');
- }catch(e){}
+ }
   jbInit();
 }
 
