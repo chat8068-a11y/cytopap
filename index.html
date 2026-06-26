@@ -1612,8 +1612,10 @@ function renderBilling(){
     var p=dateStr.split('-');
     if(p.length!==3) return false;
     var recY=parseInt(p[0]); var recM=parseInt(p[1]);
-    var ok=recY===yAD&&recM>=mFrom&&recM<=mTo;
-    if(filterClinic) ok=ok&&(r.clinic===filterClinic);
+    // รองรับทั้ง ค.ศ. และ พ.ศ.
+    var matchY = recY===yAD || recY===(yAD+543);
+    var ok=matchY&&recM>=mFrom&&recM<=mTo;
+    if(filterClinic) ok=ok&&((r.clinic||'').trim()===(filterClinic||'').trim());
     return ok;
   });
 
