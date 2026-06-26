@@ -657,34 +657,33 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
       เลือกช่วงเวลาและคลินิก
     </div>
     <div class="card-body">
-      <div class="grid g3">
+      <div class="grid g3" style="margin-bottom:10px">
         <div class="field">
-          <label>เดือน</label>
-          <select id="bill-month">
-            <option value="1">มกราคม</option><option value="2">กุมภาพันธ์</option>
-            <option value="3">มีนาคม</option><option value="4">เมษายน</option>
-            <option value="5">พฤษภาคม</option><option value="6">มิถุนายน</option>
-            <option value="7">กรกฎาคม</option><option value="8">สิงหาคม</option>
-            <option value="9">กันยายน</option><option value="10">ตุลาคม</option>
-            <option value="11">พฤศจิกายน</option><option value="12">ธันวาคม</option>
-          </select>
+          <label>เดือนเริ่มต้น</label>
+          <select id="bill-month"><option value="1">มกราคม</option><option value="2">กุมภาพันธ์</option><option value="3">มีนาคม</option><option value="4">เมษายน</option><option value="5">พฤษภาคม</option><option value="6">มิถุนายน</option><option value="7">กรกฎาคม</option><option value="8">สิงหาคม</option><option value="9">กันยายน</option><option value="10">ตุลาคม</option><option value="11">พฤศจิกายน</option><option value="12">ธันวาคม</option></select>
+        </div>
+        <div class="field">
+          <label>เดือนสิ้นสุด</label>
+          <select id="bill-month-to"><option value="1">มกราคม</option><option value="2">กุมภาพันธ์</option><option value="3">มีนาคม</option><option value="4">เมษายน</option><option value="5">พฤษภาคม</option><option value="6">มิถุนายน</option><option value="7">กรกฎาคม</option><option value="8">สิงหาคม</option><option value="9">กันยายน</option><option value="10">ตุลาคม</option><option value="11">พฤศจิกายน</option><option value="12">ธันวาคม</option></select>
         </div>
         <div class="field">
           <label>ปี พ.ศ.</label>
           <input id="bill-year" type="number" placeholder="2568">
         </div>
+      </div>
+      <div class="grid g3">
         <div class="field">
           <label>คลินิก</label>
           <select id="bill-clinic">
             <option value="">— ทุกคลินิก —</option>
           </select>
         </div>
-      </div>
-      <div class="btn-row" style="padding-bottom:0">
-        <button class="btn btn-primary" onclick="renderBilling()">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          แสดงสรุป
-        </button>
+        <div class="field" style="display:flex;align-items:flex-end">
+          <button class="btn btn-primary" onclick="renderBilling()" style="width:100%">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            แสดงสรุป
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -1595,20 +1594,25 @@ function printBatch(){
 // ─── BILLING ──────────────────────────────────────
 var MONTH_TH=['','มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
 function renderBilling(){
-  var m=parseInt(document.getElementById('bill-month').value);
+  var mFrom=parseInt(document.getElementById('bill-month').value);
+  var mTo=parseInt(document.getElementById('bill-month-to').value);
+  var m=mFrom; // backward compat
   var y=parseInt(document.getElementById('bill-year').value);
   var filterClinic=document.getElementById('bill-clinic').value;
   if(!y){toast('กรุณากรอกปี พ.ศ.','e');return;}
+  if(mFrom>mTo){toast('เดือนเริ่มต้นต้องไม่มากกว่าเดือนสิ้นสุด','e');return;}
   var yAD=y-543;
   var mnames=['','มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+  var rangeLabel=mFrom===mTo ? mnames[mFrom]+' '+y : mnames[mFrom]+' — '+mnames[mTo]+' '+y;
 
-  // Filter by dc (date collected) as primary date
+  // Filter by dc (date collected) as primary date — รองรับช่วงเดือน
   var filtered=REC.filter(function(r){
     var dateStr=r.dc||r.dr||'';
     if(!dateStr) return false;
     var p=dateStr.split('-');
     if(p.length!==3) return false;
-    var ok=parseInt(p[0])===yAD&&parseInt(p[1])===m;
+    var recY=parseInt(p[0]); var recM=parseInt(p[1]);
+    var ok=recY===yAD&&recM>=mFrom&&recM<=mTo;
     if(filterClinic) ok=ok&&(r.clinic===filterClinic);
     return ok;
   });
@@ -1642,7 +1646,7 @@ function renderBilling(){
   // Grand summary
   grand.style.display='block';
   grand.innerHTML=
-    '<div class="card-head">💰 สรุปรวม — '+(filterClinic?filterClinic:'ทุกคลินิก')+' '+mnames[m]+' '+y+'</div>'+
+    '<div class="card-head">💰 สรุปรวม — '+(filterClinic?filterClinic:'ทุกคลินิก')+' '+rangeLabel+'</div>'+
     '<div class="card-body"><div class="grid g3">'+
       '<div style="background:#f7f9fd;border-radius:8px;padding:14px;text-align:center">'+
         '<div style="font-size:12px;color:#6b7a99;margin-bottom:4px">จำนวนราย</div>'+
@@ -1716,6 +1720,7 @@ function printBilling(){
 function initBillingPage(){
   var now=new Date();
   document.getElementById('bill-month').value=now.getMonth()+1;
+  document.getElementById('bill-month-to').value=now.getMonth()+1;
   document.getElementById('bill-year').value=now.getFullYear()+543;
   // Fill clinic select
   var cs=document.getElementById('bill-clinic');
