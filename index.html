@@ -577,7 +577,7 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
         <button onclick="pullFromJb()" style="background:#eef4ff;border:1.5px solid #3a5fa0;border-radius:7px;padding:6px 14px;font-size:12px;font-weight:700;color:#1a3a6e;cursor:pointer">🔄 ซิงค์ข้อมูลล่าสุด</button>
       </div>
       <div class="rec-search">
-        <input type="text" id="rec-q" placeholder="ค้นหาชื่อ, CYTO LOHY Number, คลินิก..." oninput="renderRec()">
+        <input type="text" id="rec-q" placeholder="ค้นหาชื่อ, CYTO No., คลินิก, เบอร์โทร..." oninput="renderRec()">
       </div>
       <table class="rec-table">
         <thead>
@@ -861,6 +861,10 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="8 17 12 21 16 17"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.88 18.09A5 5 0 0018 9h-1.26A8 8 0 103 16.29"/></svg>
         นำเข้าคลินิกจาก PC
       </button>
+      <button class="add-cl" onclick="syncClinicsToCloud()" style="margin-left:8px;background:#1a7a3c;color:#fff;border:none">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/><polyline points="8 7 3 12 8 17"/></svg>
+        ซิงค์คลินิกขึ้น Cloud
+      </button>
     </div>
   </div>
 
@@ -947,6 +951,8 @@ function loadData(){
     var cfgStr = localStorage.getItem('cp5_cfg')||localStorage.getItem('cp7_cfg')||localStorage.getItem('cy3_c')||'{}';
     CFG = JSON.parse(cfgStr);
   }catch(e){ CFG={} }
+  // บันทึก clinics จาก localStorage ก่อน assign
+  var savedClinics = CFG.clinics;
   CFG = Object.assign({
     l1:'เซาเทิร์นแล็บ คลินิกเทคนิคการแพทย์ (เลขที่ใบอนุญาต 84107000262)',
     l2:'Southern Lab Clinic (Southern Medical Technology Co.,Ltd.)',
@@ -958,6 +964,10 @@ function loadData(){
     an:'Mr.Chakkrit Musikawan',at:'Medical Technologist',al:'MT.8175',
     jbKey:'', jbBinId:'6a32551cf5f4af5e29003f33'
   }, CFG);
+  // ถ้า clinics จาก localStorage ว่าง ให้คืนค่า default
+  if(!savedClinics || !savedClinics.length){
+    CFG.clinics = ['หมอกาญจน์กนก-หมออีรินพ','คลินิกเวชกรรม สุขภาพดี'];
+  }
   JB_KEY = CFG.jbKey||'';
   JB_BIN_ID = '6a32551cf5f4af5e29003f33'; // Always use correct Bin ID
   CFG.jbBinId = JB_BIN_ID;
@@ -1032,10 +1042,12 @@ async function jbInit(){
 
 async function pushToJb(){
   try{
+    // ป้องกันการ push clinics ว่าง — ถ้า clinics ว่างไม่ให้ push cfg.clinics
+    var safeClinics = (CFG.clinics && CFG.clinics.length > 0) ? CFG.clinics : null;
     var payload = {
       records: REC,
       cfg: {
-        clinics: CFG.clinics||[],
+        clinics: safeClinics !== null ? safeClinics : (CFG.clinics||[]),
         clinicEmails: CFG.clinicEmails||{},
         rn: CFG.rn, rt: CFG.rt, rl: CFG.rl,
         an: CFG.an, at: CFG.at, al: CFG.al,
@@ -1066,7 +1078,14 @@ async function pullFromJb(silent){
       REC = data.records;
       if(data.cfg){
         var c = data.cfg;
-        if(c.clinics && c.clinics.length) CFG.clinics = c.clinics;
+        // ใช้ clinics จาก Firebase เฉพาะถ้ามีข้อมูล — ไม่เขียนทับด้วยอาร์เรย์ว่าง
+        if(c.clinics && c.clinics.length > 0) CFG.clinics = c.clinics;
+        // ถ้า Firebase ไม่มี clinics แต่ local มี — ให้ push local ขึ้น Firebase ใหม่
+        else if(!c.clinics || c.clinics.length === 0){
+          if(CFG.clinics && CFG.clinics.length > 0){
+            setTimeout(function(){ pushToJb(); }, 1000);
+          }
+        }
         if(c.clinicEmails) CFG.clinicEmails = c.clinicEmails;
         if(c.rn) CFG.rn=c.rn; if(c.rt) CFG.rt=c.rt; if(c.rl) CFG.rl=c.rl;
         if(c.an) CFG.an=c.an; if(c.at) CFG.at=c.at; if(c.al) CFG.al=c.al;
@@ -1449,16 +1468,27 @@ function clearForm(){
 // ─── RECORDS ──────────────────────────────────────
 function renderRec(){
   var q=(document.getElementById('rec-q').value||'').toLowerCase();
-  var fi=q?REC.filter(function(r){return(r.name||'').toLowerCase().includes(q)||(r.cyto||'').includes(q)||(r.clinic||'').toLowerCase().includes(q)}):REC.slice();
+  // สร้าง array ของ {rec, ri} เพื่อเก็บ index จริงจาก REC ก่อน sort
+  var indexed = REC.map(function(r,i){return {rec:r, ri:i};});
+  if(q){
+    indexed = indexed.filter(function(x){
+      var r=x.rec;
+      return (r.name||'').toLowerCase().includes(q)
+          || (r.cyto||'').toLowerCase().includes(q)
+          || (r.clinic||'').toLowerCase().includes(q)
+          || (r.tel||'').includes(q)
+          || (r.phone||'').includes(q);
+    });
+  }
   // เรียงล่าสุดก่อน (CYTO No. สูงสุดอยู่บน)
-  fi.sort(function(a,b){return (parseInt(b.cyto)||0)-(parseInt(a.cyto)||0);});
+  indexed.sort(function(a,b){return (parseInt(b.rec.cyto)||0)-(parseInt(a.rec.cyto)||0);});
   var tb=document.getElementById('rec-body'); var em=document.getElementById('rec-empty');
   var cnt=document.getElementById('rec-count');
-  if(cnt) cnt.textContent='รวม '+fi.length+' รายการ'+(q?' (กรองจาก '+REC.length+')':'');
-  if(!fi.length){tb.innerHTML='';em.style.display='block';return}
+  if(cnt) cnt.textContent='รวม '+indexed.length+' รายการ'+(q?' (กรองจาก '+REC.length+')':'');
+  if(!indexed.length){tb.innerHTML='';em.style.display='block';return}
   em.style.display='none';
-  tb.innerHTML=fi.map(function(r){
-    var ri=REC.indexOf(r);
+  tb.innerHTML=indexed.map(function(x){
+    var r=x.rec; var ri=x.ri;
     var cB=r.cat==='Negative for Intraepithelial Lesion or Malignancy'?'<span class="badge b-green">Negative</span>':'<span class="badge b-red">'+(r.cat||'—')+'</span>';
     var hB=r.hi==='yes'?(r.hr==='Nondetected'?'<span class="badge b-green">Nondetected</span>':'<span class="badge b-red">Detected</span>'):'<span class="badge b-gray">N/A</span>';
     var eL='<span class="badge b-gray" style="font-size:11px">'+eh(r.examLabel||r.examType||'—')+'</span>';
@@ -1788,6 +1818,13 @@ async function testJbConnection(){
     setSyncStatus(false,'เชื่อมต่อไม่สำเร็จ');
   }
 }
+async function syncClinicsToCloud(){
+  if(!CFG.clinics || !CFG.clinics.length){
+    toast('ไม่มีรายชื่อคลินิกให้ซิงค์ครับ','e'); return;
+  }
+  await pushToJb();
+  toast('ซิงค์รายชื่อคลินิก '+CFG.clinics.length+' รายการขึ้น Cloud สำเร็จ ✅');
+}
 async function saveSettings(){
   ['l1','l2','nth','nen','footer'].forEach(function(k){var e=document.getElementById('s-'+k);if(e)CFG[k]=e.value.trim()});
   ['rn','rt','rl','an','at','al'].forEach(function(k){var e=document.getElementById('s-'+k);if(e)CFG[k]=e.value.trim()});
@@ -2013,7 +2050,8 @@ function sendLineClinic(r){
 // ─── START ────────────────────────────────────────
 loadData();
 showPage('records');
-pullFromJb(true);
+// ดึงข้อมูลจาก Firebase หลัง DOM พร้อม (ไม่ push ก่อน pull)
+setTimeout(function(){ pullFromJb(true); }, 300);
 </script>
 </body>
 </html>
