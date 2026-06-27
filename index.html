@@ -518,12 +518,12 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
     </div>
     <div class="card-body">
       <div class="grid g3">
-        <div class="field"><label>Reported by</label><input id="f-rn" type="text" placeholder="Mr.Chat Wattisu"></div>
-        <div class="field"><label>ตำแหน่ง</label><input id="f-rt" type="text" placeholder="Cytotechnologist"></div>
-        <div class="field"><label>Licensed No.</label><input id="f-rl" type="text" placeholder="L66-22-0052"></div>
-        <div class="field"><label>Approved by</label><input id="f-an" type="text" placeholder="Mr.Chakkrit Musikawan"></div>
-        <div class="field"><label>ตำแหน่ง</label><input id="f-at" type="text" placeholder="Medical Technologist"></div>
-        <div class="field"><label>Licensed No.</label><input id="f-al" type="text" placeholder="MT.8175"></div>
+        <div class="field"><label>Reported by</label><input id="f-rn" type="text" autocomplete="off" placeholder="Mr.Chat Wattisu"></div>
+        <div class="field"><label>ตำแหน่ง</label><input id="f-rt" type="text" autocomplete="off" placeholder="Cytotechnologist"></div>
+        <div class="field"><label>Licensed No.</label><input id="f-rl" type="text" autocomplete="off" placeholder="L66-22-0052"></div>
+        <div class="field"><label>Approved by</label><input id="f-an" type="text" autocomplete="off" placeholder="Mr.Chakkrit Musikawan"></div>
+        <div class="field"><label>ตำแหน่ง</label><input id="f-at" type="text" autocomplete="off" placeholder="Medical Technologist"></div>
+        <div class="field"><label>Licensed No.</label><input id="f-al" type="text" autocomplete="off" placeholder="MT.8175"></div>
       </div>
     </div>
   </div>
@@ -577,7 +577,7 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
         <button onclick="pullFromJb()" style="background:#eef4ff;border:1.5px solid #3a5fa0;border-radius:7px;padding:6px 14px;font-size:12px;font-weight:700;color:#1a3a6e;cursor:pointer">🔄 ซิงค์ข้อมูลล่าสุด</button>
       </div>
       <div class="rec-search">
-        <input type="text" id="rec-q" placeholder="ค้นหาชื่อ, CYTO No., คลินิก, เบอร์โทร..." oninput="renderRec()">
+        <input type="text" id="rec-q" placeholder="ค้นหาชื่อ, CYTO No., คลินิก, เบอร์โทร..." oninput="renderRec()" autocomplete="off">
       </div>
       <table class="rec-table">
         <thead>
@@ -1100,6 +1100,8 @@ async function pullFromJb(silent){
       saveLocal();
       renderClinicEntries();
       updateNextNo();
+      // ล้าง search box ก่อน render เพื่อกัน browser autofill
+      var rqEl=document.getElementById('rec-q'); if(rqEl) rqEl.value='';
       renderRec();
       setSyncStatus(true,'ดึงข้อมูลสำเร็จ — '+new Date().toLocaleTimeString('th-TH')+' ('+REC.length+' รายการ)');
       if(!silent) toast('ดึงข้อมูลจาก Cloud สำเร็จ — '+REC.length+' รายการ');
@@ -1883,7 +1885,7 @@ function showPage(p){
   document.getElementById('page-'+p).classList.add('active');
   document.querySelectorAll('.nav-btn').forEach(function(b){b.classList.remove('active')});
   document.getElementById('nb-'+p).classList.add('active');
-  if(p==='records'){ renderRec(); populateBatchNew(); } if(p==='batch'){ document.getElementById('batch-list').style.display='none'; document.getElementById('batch-empty').style.display='none'; }
+  if(p==='records'){ var rq=document.getElementById('rec-q'); if(rq) rq.value=''; renderRec(); populateBatchNew(); } if(p==='batch'){ document.getElementById('batch-list').style.display='none'; document.getElementById('batch-empty').style.display='none'; }
   if(p==='settings') loadSettings();
   if(p==='billing') initBillingPage();
   if(p==='stats') renderStats();
