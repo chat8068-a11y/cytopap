@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap" rel="stylesheet">
-<title>CytoPAP System v36.4 — Cervical Cytology Lab Management</title>
+<title>CytoPAP System v36.5 — Cervical Cytology Lab Management</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee','Tahoma','Cordia New','DB Helvethaica X','TH Sarabun New',Arial,sans-serif;background:#f0f4f8;color:#1a1a2e;font-size:15px;min-height:100vh}
@@ -156,7 +156,7 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
         <div class="sub">Cervical Cytology<br>Lab Management</div>
       </div>
     </div>
-    <span class="ver">v36.4 — Bethesda 2001 / 2014</span>
+    <span class="ver">v36.5 — Bethesda 2001 / 2014</span>
   </div>
   <nav class="nav">
     <button class="nav-btn active" onclick="showPage('form')" id="nb-form">
@@ -1099,6 +1099,8 @@ async function pullFromJb(silent){
       }catch(e){}
       saveLocal();
       renderClinicEntries();
+      fillClinicSelect();    // อัปเดต dropdown คลินิกในฟอร์มบันทึก
+      fillDefaultStaff();    // อัปเดตชื่อเจ้าหน้าที่ในฟอร์ม
       updateNextNo();
       // ล้าง search box ก่อน render เพื่อกัน browser autofill
       var rqEl=document.getElementById('rec-q'); if(rqEl) rqEl.value='';
@@ -2053,6 +2055,8 @@ function sendLineClinic(r){
 
 // ─── START ────────────────────────────────────────
 loadData();
+fillClinicSelect();   // เติม dropdown คลินิกจาก localStorage ก่อน
+fillDefaultStaff();   // เติมชื่อเจ้าหน้าที่
 showPage('records');
 // ดึงข้อมูลจาก Firebase หลัง DOM พร้อม (ไม่ push ก่อน pull)
 setTimeout(function(){ pullFromJb(true); }, 300);
