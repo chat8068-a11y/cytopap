@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap" rel="stylesheet">
-<title>CytoPAP System v36.10 — Cervical Cytology Lab Management</title>
+<title>CytoPAP System v37 — Cervical Cytology Lab Management</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee','Tahoma','Cordia New','DB Helvethaica X','TH Sarabun New',Arial,sans-serif;background:#f0f4f8;color:#1a1a2e;font-size:15px;min-height:100vh}
@@ -141,6 +141,7 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
 .empty-state svg{margin:0 auto 12px;display:block;opacity:.35}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
@@ -156,7 +157,7 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
         <div class="sub">Cervical Cytology<br>Lab Management</div>
       </div>
     </div>
-    <span class="ver">v36.10 — Bethesda 2001 / 2014</span>
+    <span class="ver">v37 — Bethesda 2001 / 2014</span>
   </div>
   <nav class="nav">
     <button class="nav-btn active" onclick="showPage('form')" id="nb-form">
@@ -721,78 +722,134 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
 
 <!-- ── PAGE: STATS ── -->
 <div id="page-stats" class="page">
-  <div class="page-title">สถิติและกราฟ</div>
-  <div class="page-sub">ภาพรวมการตรวจทั้งหมดในระบบ</div>
+  <div class="page-title">สถิติ &amp; กราฟ</div>
+  <div class="page-sub">ภาพรวมการตรวจและ QR Code คลินิก</div>
 
-  <div class="grid g3" style="margin-bottom:18px">
+  <!-- KPI Cards Row 1 -->
+  <div class="grid g4" style="margin-bottom:14px">
     <div class="card" style="margin-bottom:0">
-      <div class="card-body" style="text-align:center;padding:20px">
-        <div style="font-size:12px;color:#6b7a99;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">รายการทั้งหมด</div>
-        <div id="st-total" style="font-size:40px;font-weight:800;color:#1a3a6e">—</div>
-        <div style="font-size:12px;color:#6b7a99;margin-top:4px">ผลตรวจสะสม</div>
+      <div class="card-body" style="text-align:center;padding:16px">
+        <div style="font-size:11px;color:#6b7a99;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">รายการทั้งหมด</div>
+        <div id="st-total" style="font-size:36px;font-weight:800;color:#1a3a6e">—</div>
+        <div style="font-size:11px;color:#6b7a99;margin-top:2px">ผลตรวจสะสม</div>
       </div>
     </div>
     <div class="card" style="margin-bottom:0">
-      <div class="card-body" style="text-align:center;padding:20px">
-        <div style="font-size:12px;color:#e53e3e;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">HPV Detected</div>
-        <div id="st-hpv-pos" style="font-size:40px;font-weight:800;color:#e53e3e">—</div>
-        <div id="st-hpv-pct" style="font-size:12px;color:#6b7a99;margin-top:4px">—</div>
+      <div class="card-body" style="text-align:center;padding:16px">
+        <div style="font-size:11px;color:#e53e3e;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">HPV Detected</div>
+        <div id="st-hpv-pos" style="font-size:36px;font-weight:800;color:#e53e3e">—</div>
+        <div id="st-hpv-pct" style="font-size:11px;color:#6b7a99;margin-top:2px">—</div>
       </div>
     </div>
     <div class="card" style="margin-bottom:0">
-      <div class="card-body" style="text-align:center;padding:20px">
-        <div style="font-size:12px;color:#1a7a3c;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">Negative (ปกติ)</div>
-        <div id="st-neg" style="font-size:40px;font-weight:800;color:#1a7a3c">—</div>
-        <div id="st-neg-pct" style="font-size:12px;color:#6b7a99;margin-top:4px">—</div>
+      <div class="card-body" style="text-align:center;padding:16px">
+        <div style="font-size:11px;color:#1a7a3c;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Negative (ปกติ)</div>
+        <div id="st-neg" style="font-size:36px;font-weight:800;color:#1a7a3c">—</div>
+        <div id="st-neg-pct" style="font-size:11px;color:#6b7a99;margin-top:2px">—</div>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:0">
+      <div class="card-body" style="text-align:center;padding:16px">
+        <div style="font-size:11px;color:#805ad5;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Abnormality</div>
+        <div id="st-abn" style="font-size:36px;font-weight:800;color:#805ad5">—</div>
+        <div id="st-abn-pct" style="font-size:11px;color:#6b7a99;margin-top:2px">—</div>
       </div>
     </div>
   </div>
 
-  <div class="grid g2" style="margin-bottom:18px">
+  <!-- KPI Cards Row 2 -->
+  <div class="grid g4" style="margin-bottom:18px">
+    <div class="card" style="margin-bottom:0">
+      <div class="card-body" style="text-align:center;padding:16px">
+        <div style="font-size:11px;color:#6b7a99;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">HPV Positive Rate</div>
+        <div id="st-hpv-rate" style="font-size:36px;font-weight:800;color:#dd6b20">—</div>
+        <div style="font-size:11px;color:#6b7a99;margin-top:2px">% ของที่ตรวจ HPV</div>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:0">
+      <div class="card-body" style="text-align:center;padding:16px">
+        <div style="font-size:11px;color:#2b6cb0;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">รายได้รวม</div>
+        <div id="st-revenue" style="font-size:28px;font-weight:800;color:#2b6cb0">—</div>
+        <div style="font-size:11px;color:#6b7a99;margin-top:2px">บาท (ทั้งหมด)</div>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:0">
+      <div class="card-body" style="text-align:center;padding:16px">
+        <div style="font-size:11px;color:#6b7a99;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">รายได้เดือนนี้</div>
+        <div id="st-rev-month" style="font-size:28px;font-weight:800;color:#1a7a3c">—</div>
+        <div style="font-size:11px;color:#6b7a99;margin-top:2px">บาท</div>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:0">
+      <div class="card-body" style="text-align:center;padding:16px">
+        <div style="font-size:11px;color:#6b7a99;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">จำนวนคลินิก</div>
+        <div id="st-clinics" style="font-size:36px;font-weight:800;color:#1a3a6e">—</div>
+        <div style="font-size:11px;color:#6b7a99;margin-top:2px">คลินิกที่ส่งตรวจ</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts Row 1 -->
+  <div class="grid g2" style="margin-bottom:14px">
     <div class="card" style="margin-bottom:0">
       <div class="card-head">📊 จำนวนเคสรายเดือน (12 เดือนล่าสุด)</div>
-      <div class="card-body">
-        <canvas id="chart-monthly" height="200"></canvas>
-      </div>
+      <div class="card-body"><canvas id="chart-monthly" height="200"></canvas></div>
     </div>
     <div class="card" style="margin-bottom:0">
-      <div class="card-head">🏥 แยกตามคลินิก</div>
-      <div class="card-body">
-        <canvas id="chart-clinic" height="200"></canvas>
-      </div>
+      <div class="card-head">💰 รายได้รายเดือน (12 เดือนล่าสุด)</div>
+      <div class="card-body"><canvas id="chart-revenue" height="200"></canvas></div>
     </div>
   </div>
 
-  <div class="grid g2" style="margin-bottom:18px">
+  <!-- Charts Row 2 -->
+  <div class="grid g2" style="margin-bottom:14px">
+    <div class="card" style="margin-bottom:0">
+      <div class="card-head">🧬 HPV Positive Rate รายเดือน (%)</div>
+      <div class="card-body"><canvas id="chart-hpv-rate" height="200"></canvas></div>
+    </div>
+    <div class="card" style="margin-bottom:0">
+      <div class="card-head">🏥 เคสแยกตามคลินิก</div>
+      <div class="card-body"><canvas id="chart-clinic" height="200"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Charts Row 3 -->
+  <div class="grid g3" style="margin-bottom:14px">
     <div class="card" style="margin-bottom:0">
       <div class="card-head">🧬 ผล HPV DNA</div>
-      <div class="card-body">
-        <canvas id="chart-hpv" height="180"></canvas>
-      </div>
+      <div class="card-body"><canvas id="chart-hpv" height="200"></canvas></div>
     </div>
     <div class="card" style="margin-bottom:0">
       <div class="card-head">📋 ผล Cytology</div>
-      <div class="card-body">
-        <canvas id="chart-cyto" height="180"></canvas>
-      </div>
+      <div class="card-body"><canvas id="chart-cyto" height="200"></canvas></div>
+    </div>
+    <div class="card" style="margin-bottom:0">
+      <div class="card-head">🔬 Top Genotypes ที่พบบ่อย</div>
+      <div class="card-body"><canvas id="chart-geno" height="200"></canvas></div>
     </div>
   </div>
 
-  <div class="card">
-    <div class="card-head">💰 รายได้รายเดือน (12 เดือนล่าสุด)</div>
+  <!-- QR Code Section -->
+  <div class="card" style="margin-bottom:14px">
+    <div class="card-head">📱 QR Code — ลิงก์คลินิกดูผลตรวจของตัวเอง</div>
     <div class="card-body">
-      <canvas id="chart-revenue" height="150"></canvas>
+      <p style="font-size:13px;color:#6b7a99;margin-bottom:16px">คลินิกสแกน QR → เห็นเฉพาะผลตรวจของคลินิกตัวเอง (ค้นหาและดู PDF ได้)</p>
+      <div id="qr-container" style="display:flex;flex-wrap:wrap;gap:20px"></div>
     </div>
   </div>
 
   <div class="btn-row">
     <button class="btn btn-success" onclick="exportExcel()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-      Export ข้อมูลทั้งหมดเป็น Excel
+      Export Excel
     </button>
     <button class="btn btn-outline" onclick="renderStats()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
       รีเฟรชสถิติ
+    </button>
+    <button class="btn btn-primary" onclick="printAllQR()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+      พิมพ์ QR Code ทั้งหมด
     </button>
   </div>
 </div>
@@ -1961,38 +2018,83 @@ function toast(msg,type){
 function renderStats(){
   if(!REC.length){ return; }
   var total=REC.length;
-  var hpvPos=REC.filter(function(r){return r.hi==='yes'&&r.hr==='Detected'}).length;
-  var hpvNeg=REC.filter(function(r){return r.hi==='yes'&&r.hr==='Nondetected'}).length;
-  var hpvNa=REC.filter(function(r){return r.hi!=='yes'}).length;
-  var neg=REC.filter(function(r){return r.cat==='Negative for Intraepithelial Lesion or Malignancy'}).length;
-  var abn=REC.filter(function(r){return r.cat==='Epithelial Cell Abnormality'}).length;
+  var now=new Date();
+  var curY=now.getFullYear(), curM=now.getMonth()+1;
+
+  // --- KPI ---
+  var hpvTested=REC.filter(function(r){return r.hi==='yes'||r.examType==='hpv_only'||r.examType==='hpv_prog'||r.examType==='pap_hpv';});
+  var hpvPos=hpvTested.filter(function(r){return r.hr==='Detected';}).length;
+  var hpvNeg=hpvTested.filter(function(r){return r.hr==='Nondetected';}).length;
+  var hpvNa=total-hpvTested.length;
+  var neg=REC.filter(function(r){return r.cat==='Negative for Intraepithelial Lesion or Malignancy';}).length;
+  var abn=REC.filter(function(r){return r.cat==='Epithelial Cell Abnormality';}).length;
   var oth=total-neg-abn;
+  var totalRev=REC.reduce(function(s,r){return s+(parseFloat(r.price)||0);},0);
+  var revMonth=REC.filter(function(r){
+    if(!r.dr)return false;
+    var p=r.dr.split('-');
+    return parseInt(p[0])===curY&&parseInt(p[1])===curM;
+  }).reduce(function(s,r){return s+(parseFloat(r.price)||0);},0);
+  var clinicSet={};
+  REC.forEach(function(r){if(r.clinic)clinicSet[r.clinic]=true;});
+  var numClinics=Object.keys(clinicSet).length;
+  var hpvRate=hpvTested.length?Math.round(hpvPos/hpvTested.length*100):0;
+
+  // Fill KPIs
   document.getElementById('st-total').textContent=total;
   document.getElementById('st-hpv-pos').textContent=hpvPos;
-  document.getElementById('st-hpv-pct').textContent=total?Math.round(hpvPos/total*100)+'% ของทั้งหมด':'—';
+  document.getElementById('st-hpv-pct').textContent=hpvTested.length?(hpvPos+'/'+hpvTested.length+' ที่ตรวจ HPV'):'—';
   document.getElementById('st-neg').textContent=neg;
-  document.getElementById('st-neg-pct').textContent=total?Math.round(neg/total*100)+'% ของทั้งหมด':'—';
+  document.getElementById('st-neg-pct').textContent=total?Math.round(neg/total*100)+'%':'—';
+  document.getElementById('st-abn').textContent=abn;
+  document.getElementById('st-abn-pct').textContent=total?Math.round(abn/total*100)+'%':'—';
+  document.getElementById('st-hpv-rate').textContent=hpvRate+'%';
+  document.getElementById('st-revenue').textContent=totalRev.toLocaleString();
+  document.getElementById('st-rev-month').textContent=revMonth.toLocaleString();
+  document.getElementById('st-clinics').textContent=numClinics;
 
-  var now=new Date();
-  var monthLabels=[],monthlyCounts=[],monthlyRevenue=[],months=[];
+  // --- Monthly data ---
   var thM=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  var monthLabels=[],months=[],monthlyCounts=[],monthlyRevenue=[],monthlyHpvPos=[],monthlyHpvTest=[];
   for(var i=11;i>=0;i--){
     var d=new Date(now.getFullYear(),now.getMonth()-i,1);
     months.push({y:d.getFullYear(),m:d.getMonth()+1});
     monthLabels.push(thM[d.getMonth()]+' '+(d.getFullYear()+543).toString().slice(2));
-    monthlyCounts.push(0); monthlyRevenue.push(0);
+    monthlyCounts.push(0); monthlyRevenue.push(0); monthlyHpvPos.push(0); monthlyHpvTest.push(0);
   }
   REC.forEach(function(r){
-    if(!r.dr)return; var p=r.dr.split('-'); if(p.length!==3)return;
+    if(!r.dr)return;
+    var p=r.dr.split('-'); if(p.length!==3)return;
     var ry=parseInt(p[0]),rm=parseInt(p[1]);
-    months.forEach(function(mo,idx){if(mo.y===ry&&mo.m===rm){monthlyCounts[idx]++;monthlyRevenue[idx]+=(parseFloat(r.price)||0);}});
+    months.forEach(function(mo,idx){
+      if(mo.y===ry&&mo.m===rm){
+        monthlyCounts[idx]++;
+        monthlyRevenue[idx]+=(parseFloat(r.price)||0);
+        var isHpv=r.hi==='yes'||r.examType==='hpv_only'||r.examType==='hpv_prog'||r.examType==='pap_hpv';
+        if(isHpv){ monthlyHpvTest[idx]++; if(r.hr==='Detected') monthlyHpvPos[idx]++; }
+      }
+    });
   });
+  var monthlyHpvRate=monthlyHpvTest.map(function(t,i){return t?Math.round(monthlyHpvPos[i]/t*100):0;});
 
+  // --- Clinic data ---
   var clinicMap={};
-  REC.forEach(function(r){var c=r.clinic||'ไม่ระบุ';clinicMap[c]=(clinicMap[c]||0)+1});
-  var cLabels=Object.keys(clinicMap).slice(0,8);
-  var cData=cLabels.map(function(c){return clinicMap[c]});
-  var COLORS=['#1a3a6e','#e53e3e','#1a7a3c','#f6ad55','#805ad5','#dd6b20','#2b6cb0','#c53030'];
+  REC.forEach(function(r){var c=r.clinic||'ไม่ระบุ';clinicMap[c]=(clinicMap[c]||0)+1;});
+  var cEntries=Object.entries(clinicMap).sort(function(a,b){return b[1]-a[1];}).slice(0,10);
+  var cLabels=cEntries.map(function(e){return e[0];});
+  var cData=cEntries.map(function(e){return e[1];});
+
+  // --- Genotype data ---
+  var genoMap={};
+  REC.forEach(function(r){
+    (r.hrGenos||[]).forEach(function(g){genoMap['HR-'+g]=(genoMap['HR-'+g]||0)+1;});
+    (r.lrGenos||[]).forEach(function(g){genoMap['LR-'+g]=(genoMap['LR-'+g]||0)+1;});
+    (r.phrGenos||[]).forEach(function(g){genoMap['PHR-'+g]=(genoMap['PHR-'+g]||0)+1;});
+  });
+  var gEntries=Object.entries(genoMap).sort(function(a,b){return b[1]-a[1];}).slice(0,10);
+  var gLabels=gEntries.map(function(e){return e[0];});
+  var gData=gEntries.map(function(e){return e[1];});
+  var COLORS=['#e53e3e','#dd6b20','#d69e2e','#38a169','#3182ce','#805ad5','#d53f8c','#2b6cb0','#c53030','#276749'];
 
   function mkChart(id,type,labels,datasets,opts){
     var ctx=document.getElementById(id); if(!ctx)return;
@@ -2000,13 +2102,97 @@ function renderStats(){
     return new Chart(ctx,{type:type,data:{labels:labels,datasets:datasets},options:Object.assign({responsive:true,plugins:{legend:{position:(type==='pie'||type==='doughnut')?'right':'top'}}},opts||{})});
   }
 
-  mkChart('chart-monthly','bar',monthLabels,[{label:'จำนวนเคส',data:monthlyCounts,backgroundColor:'rgba(26,58,110,0.8)',borderColor:'#1a3a6e',borderWidth:1,borderRadius:4}],{scales:{y:{beginAtZero:true,ticks:{stepSize:1}}}});
-  mkChart('chart-clinic','bar',cLabels,[{label:'จำนวนเคส',data:cData,backgroundColor:cLabels.map(function(_,i){return COLORS[i%COLORS.length]}),borderRadius:4}],{indexAxis:'y',scales:{x:{beginAtZero:true,ticks:{stepSize:1}}}});
-  mkChart('chart-hpv','doughnut',['Detected','Nondetected','ไม่ได้ตรวจ'],[{data:[hpvPos,hpvNeg,hpvNa],backgroundColor:['#e53e3e','#1a7a3c','#a0aec0'],borderWidth:2}]);
-  mkChart('chart-cyto','doughnut',['Negative','Abnormality','Other'],[{data:[neg,abn,oth],backgroundColor:['#1a7a3c','#e53e3e','#f6ad55'],borderWidth:2}]);
-  mkChart('chart-revenue','line',monthLabels,[{label:'รายได้ (฿)',data:monthlyRevenue,borderColor:'#1a7a3c',backgroundColor:'rgba(26,122,60,0.1)',fill:true,tension:0.4,pointBackgroundColor:'#1a7a3c',pointRadius:4}],{scales:{y:{beginAtZero:true}}});
+  mkChart('chart-monthly','bar',monthLabels,[
+    {label:'จำนวนเคส',data:monthlyCounts,backgroundColor:'rgba(26,58,110,0.8)',borderColor:'#1a3a6e',borderWidth:1,borderRadius:4}
+  ],{scales:{y:{beginAtZero:true,ticks:{stepSize:1}}}});
+
+  mkChart('chart-revenue','line',monthLabels,[
+    {label:'รายได้ (฿)',data:monthlyRevenue,borderColor:'#1a7a3c',backgroundColor:'rgba(26,122,60,0.1)',fill:true,tension:0.4,pointBackgroundColor:'#1a7a3c',pointRadius:4}
+  ],{scales:{y:{beginAtZero:true}}});
+
+  mkChart('chart-hpv-rate','line',monthLabels,[
+    {label:'HPV Positive Rate (%)',data:monthlyHpvRate,borderColor:'#e53e3e',backgroundColor:'rgba(229,62,62,0.1)',fill:true,tension:0.4,pointBackgroundColor:'#e53e3e',pointRadius:4}
+  ],{scales:{y:{beginAtZero:true,max:100,ticks:{callback:function(v){return v+'%'}}}}});
+
+  mkChart('chart-clinic','bar',cLabels,[
+    {label:'จำนวนเคส',data:cData,backgroundColor:cLabels.map(function(_,i){return COLORS[i%COLORS.length];}),borderRadius:4}
+  ],{indexAxis:'y',scales:{x:{beginAtZero:true,ticks:{stepSize:1}}}});
+
+  mkChart('chart-hpv','doughnut',['Detected','Nondetected','ไม่ได้ตรวจ'],[
+    {data:[hpvPos,hpvNeg,hpvNa],backgroundColor:['#e53e3e','#1a7a3c','#a0aec0'],borderWidth:2}
+  ]);
+
+  mkChart('chart-cyto','doughnut',['Negative','Abnormality','Other'],[
+    {data:[neg,abn,oth],backgroundColor:['#1a7a3c','#805ad5','#f6ad55'],borderWidth:2}
+  ]);
+
+  if(gLabels.length){
+    mkChart('chart-geno','bar',gLabels,[
+      {label:'จำนวนเคส',data:gData,backgroundColor:gLabels.map(function(l,i){return l.startsWith('HR')?'#e53e3e':l.startsWith('LR')?'#1a7a3c':'#dd6b20';}),borderRadius:4}
+    ],{scales:{y:{beginAtZero:true,ticks:{stepSize:1}}}});
+  }
+
+  // --- QR Codes ---
+  renderQRCodes();
 }
 
+function renderQRCodes(){
+  var container=document.getElementById('qr-container');
+  if(!container)return;
+  container.innerHTML='';
+  var clinicSet={};
+  REC.forEach(function(r){if(r.clinic)clinicSet[r.clinic]=true;});
+  var clinics=Object.keys(clinicSet).sort();
+  if(!clinics.length){container.innerHTML='<p style="color:#94a3b8;font-size:13px">ยังไม่มีข้อมูลคลินิกครับ</p>';return;}
+  var baseUrl=window.location.origin+window.location.pathname;
+  clinics.forEach(function(name){
+    var url=baseUrl+'?clinic='+encodeURIComponent(name);
+    var wrap=document.createElement('div');
+    wrap.style.cssText='text-align:center;background:#f7f9fd;border:1.5px solid #e0e8f5;border-radius:12px;padding:16px 20px;min-width:160px';
+    var canvas=document.createElement('canvas');
+    wrap.appendChild(canvas);
+    var label=document.createElement('div');
+    label.style.cssText='font-size:12px;font-weight:700;color:#1a3a6e;margin-top:10px;max-width:150px;word-break:break-all';
+    label.textContent=name;
+    wrap.appendChild(label);
+    var cnt=REC.filter(function(r){return r.clinic===name;}).length;
+    var sub=document.createElement('div');
+    sub.style.cssText='font-size:11px;color:#6b7a99;margin-top:3px';
+    sub.textContent=cnt+' รายการ';
+    wrap.appendChild(sub);
+    var dlBtn=document.createElement('button');
+    dlBtn.textContent='⬇ บันทึก QR';
+    dlBtn.style.cssText='margin-top:8px;background:#1a3a6e;color:#fff;border:none;border-radius:6px;padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer';
+    dlBtn.onclick=function(){
+      var a=document.createElement('a');
+      a.download='QR_'+name+'.png';
+      a.href=canvas.toDataURL();
+      a.click();
+    };
+    wrap.appendChild(dlBtn);
+    container.appendChild(wrap);
+    if(typeof QRCode!=='undefined'){
+      QRCode.toCanvas(canvas,url,{width:140,margin:1,color:{dark:'#1a3a6e',light:'#ffffff'}},function(){});
+    }
+  });
+}
+
+function printAllQR(){
+  var container=document.getElementById('qr-container');
+  if(!container||!container.children.length){toast('กรุณาเปิดหน้าสถิติก่อนครับ','e');return;}
+  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>QR Codes - CytoPAP</title>'+
+    '<style>body{font-family:sans-serif;padding:20px}h2{color:#1a3a6e;margin-bottom:20px}.grid{display:flex;flex-wrap:wrap;gap:20px}.item{text-align:center;border:1px solid #ddd;border-radius:8px;padding:16px;width:180px}.name{font-size:13px;font-weight:700;color:#1a3a6e;margin-top:8px}.cnt{font-size:11px;color:#666;margin-top:3px}@media print{@page{margin:10mm}}</style>'+
+    '</head><body><h2>📱 QR Code คลินิก — CytoPAP System</h2><div class="grid">';
+  Array.from(container.children).forEach(function(wrap){
+    var canvas=wrap.querySelector('canvas');
+    var name=wrap.querySelectorAll('div')[0].textContent;
+    var cnt=wrap.querySelectorAll('div')[1].textContent;
+    if(canvas) html+='<div class="item"><img src="'+canvas.toDataURL()+'" width="140"><div class="name">'+name+'</div><div class="cnt">'+cnt+'</div></div>';
+  });
+  html+='</div>'+'<scr'+'ipt>window.onload=function(){window.print();}<'+'/scr'+'ipt></body></html>';
+  var w=window.open('','_blank','width=900,height=700');
+  if(w){w.document.write(html);w.document.close();}
+}
 function exportExcel(){
   if(!REC.length){toast('ยังไม่มีข้อมูล','e');return}
   if(typeof XLSX==='undefined'){toast('กำลังโหลด...','e');return}
@@ -2111,10 +2297,42 @@ function sendLineClinic(r){
 
 // ─── START ────────────────────────────────────────
 loadData();
-fillClinicSelect();   // เติม dropdown คลินิกจาก localStorage ก่อน
-fillDefaultStaff();   // เติมชื่อเจ้าหน้าที่
-setupPills();         // เปิดใช้งาน pill buttons ทั้งหมด
-showPage('records');
+fillClinicSelect();
+fillDefaultStaff();
+setupPills();
+
+// ตรวจสอบ ?clinic=xxx ใน URL — โหมดคลินิกดูผลตัวเอง
+var _urlClinic=(new URLSearchParams(window.location.search)).get('clinic')||'';
+if(_urlClinic){
+  // โหมดคลินิก: ซ่อนเมนูที่ไม่จำเป็น แสดงเฉพาะประวัติผลตรวจของคลินิกนั้น
+  document.querySelectorAll('.nav-btn').forEach(function(b){
+    var pid=b.id.replace('nb-','');
+    if(pid!=='records') b.style.display='none';
+  });
+  var clinicBanner=document.createElement('div');
+  clinicBanner.style.cssText='background:#1a3a6e;color:#fff;padding:8px 16px;font-size:13px;font-weight:700;text-align:center';
+  clinicBanner.textContent='🏥 '+decodeURIComponent(_urlClinic)+' — ผลตรวจของคลินิก';
+  document.querySelector('.sidebar').appendChild(clinicBanner);
+  showPage('records');
+  setTimeout(function(){
+    pullFromJb(true).then(function(){
+      // กรอง records เฉพาะคลินิกนี้
+      var rqEl=document.getElementById('rec-q');
+      if(rqEl){ rqEl.value=decodeURIComponent(_urlClinic); renderRec(); }
+    }).catch(function(){});
+  },300);
+} else {
+  showPage('records');
+  setTimeout(function(){
+    var _backupClinics=(CFG.clinics&&CFG.clinics.length)?JSON.parse(JSON.stringify(CFG.clinics)):null;
+    pullFromJb(true).then(function(){
+      if(_backupClinics&&_backupClinics.length&&(!CFG.clinics||!CFG.clinics.length)){
+        CFG.clinics=_backupClinics; fillClinicSelect(); saveLocal();
+        setTimeout(function(){pushToJb();},500);
+      }
+    }).catch(function(){});
+  },300);
+}
 // ดึงข้อมูลจาก Firebase หลัง DOM พร้อม
 setTimeout(function(){
   // สำรอง clinics ก่อน pull (ป้องกัน Firebase ทับ)
