@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap" rel="stylesheet">
-<title>CytoPAP System v36.6 — Cervical Cytology Lab Management</title>
+<title>CytoPAP System v36.8 — Cervical Cytology Lab Management</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee','Tahoma','Cordia New','DB Helvethaica X','TH Sarabun New',Arial,sans-serif;background:#f0f4f8;color:#1a1a2e;font-size:15px;min-height:100vh}
@@ -156,7 +156,7 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
         <div class="sub">Cervical Cytology<br>Lab Management</div>
       </div>
     </div>
-    <span class="ver">v36.6 — Bethesda 2001 / 2014</span>
+    <span class="ver">v36.8 — Bethesda 2001 / 2014</span>
   </div>
   <nav class="nav">
     <button class="nav-btn active" onclick="showPage('form')" id="nb-form">
@@ -865,6 +865,10 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/><polyline points="8 7 3 12 8 17"/></svg>
         ซิงค์คลินิกขึ้น Cloud
       </button>
+      <button class="add-cl" onclick="restoreClinicsFromRecords()" style="margin-left:8px;background:#c0392b;color:#fff;border:none">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
+        กู้คืนคลินิกจาก Records
+      </button>
     </div>
   </div>
 
@@ -1104,6 +1108,14 @@ async function pullFromJb(silent){
       updateNextNo();
       // ล้าง search box ก่อน render เพื่อกัน browser autofill
       var rqEl=document.getElementById('rec-q'); if(rqEl) rqEl.value='';
+      // ถ้า clinics ว่าง ให้กู้คืนจาก records อัตโนมัติ (silent)
+      if((!CFG.clinics || !CFG.clinics.length) && REC.length > 0){
+        var _ns={};
+        REC.forEach(function(r){var n=(r.clinic||'').trim();if(n)_ns[n]=true;});
+        CFG.clinics=Object.keys(_ns).sort().map(function(n){return {name:n,email:'',prices:{}};});
+        saveLocal(); fillClinicSelect();
+        setTimeout(function(){pushToJb();},800);
+      }
       renderRec();
       setSyncStatus(true,'ดึงข้อมูลสำเร็จ — '+new Date().toLocaleTimeString('th-TH')+' ('+REC.length+' รายการ)');
       if(!silent) toast('ดึงข้อมูลจาก Cloud สำเร็จ — '+REC.length+' รายการ');
@@ -1242,6 +1254,12 @@ function suggestFilename(d){
 }
 
 // ─── BUILD REPORT ─────────────────────────────────
+// ─── TEST DESCRIPTION TEXTS ───────────────────────
+var TDESC = {
+  v1: 'HPV DNA Genotype Testing detects high-risk and low-risk HPV types using PCR-based genotyping. This test identifies specific HPV genotypes associated with cervical cancer risk.',
+  v2: 'HPV DNA Genotype Testing is performed using real-time PCR technology to detect and genotype Human Papillomavirus (HPV) DNA in cervical specimens. The test identifies both high-risk (HR-HPV) types associated with cervical cancer and low-risk (LR-HPV) types associated with benign lesions, providing clinically relevant genotype-specific results for patient management.'
+};
+
 function buildReport(d){
   // Map examType to hi/hr for compatibility
   if(d.examType){
@@ -1827,6 +1845,41 @@ async function testJbConnection(){
     setSyncStatus(false,'เชื่อมต่อไม่สำเร็จ');
   }
 }
+async function restoreClinicsFromRecords(){
+  if(!REC || !REC.length){
+    toast('ยังไม่มีข้อมูล Records — กรุณาซิงค์ข้อมูลก่อนครับ','e');
+    return;
+  }
+  // ดึงชื่อคลินิก unique ทั้งหมดจาก records
+  var nameSet = {};
+  REC.forEach(function(r){
+    var n = (r.clinic||'').trim();
+    if(n) nameSet[n] = true;
+  });
+  var names = Object.keys(nameSet).sort();
+  if(!names.length){
+    toast('ไม่พบชื่อคลินิกใน Records','e');
+    return;
+  }
+  // รวมกับคลินิกที่มีอยู่แล้ว (ไม่ซ้ำ)
+  if(!CFG.clinics) CFG.clinics = [];
+  var added = 0;
+  names.forEach(function(n){
+    var exists = CFG.clinics.some(function(c){
+      return (typeof c==='object' ? c.name||'' : c) === n;
+    });
+    if(!exists){
+      CFG.clinics.push({name:n, email:'', prices:{}});
+      added++;
+    }
+  });
+  saveLocal();
+  renderClinicEntries();
+  fillClinicSelect();
+  // push ขึ้น Firebase ทันที
+  await pushToJb();
+  toast('กู้คืนสำเร็จ — พบ '+names.length+' คลินิก (เพิ่มใหม่ '+added+' รายการ) ✅');
+}
 async function syncClinicsToCloud(){
   if(!CFG.clinics || !CFG.clinics.length){
     toast('ไม่มีรายชื่อคลินิกให้ซิงค์ครับ','e'); return;
@@ -2061,8 +2114,20 @@ loadData();
 fillClinicSelect();   // เติม dropdown คลินิกจาก localStorage ก่อน
 fillDefaultStaff();   // เติมชื่อเจ้าหน้าที่
 showPage('records');
-// ดึงข้อมูลจาก Firebase หลัง DOM พร้อม (ไม่ push ก่อน pull)
-setTimeout(function(){ pullFromJb(true); }, 300);
+// ดึงข้อมูลจาก Firebase หลัง DOM พร้อม
+setTimeout(function(){
+  // สำรอง clinics ก่อน pull (ป้องกัน Firebase ทับ)
+  var _backupClinics = (CFG.clinics && CFG.clinics.length) ? JSON.parse(JSON.stringify(CFG.clinics)) : null;
+  pullFromJb(true).then(function(){
+    // ถ้า Firebase ทำให้ clinics หาย ให้คืนค่าจาก backup และ push ขึ้น
+    if(_backupClinics && _backupClinics.length && (!CFG.clinics || !CFG.clinics.length)){
+      CFG.clinics = _backupClinics;
+      fillClinicSelect();
+      saveLocal();
+      setTimeout(function(){ pushToJb(); }, 500);
+    }
+  }).catch(function(){});
+}, 300);
 </script>
 </body>
 </html>
