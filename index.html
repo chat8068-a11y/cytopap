@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap" rel="stylesheet">
-<title>CytoPAP System v36.5 — Cervical Cytology Lab Management</title>
+<title>CytoPAP System v36.6 — Cervical Cytology Lab Management</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee','Tahoma','Cordia New','DB Helvethaica X','TH Sarabun New',Arial,sans-serif;background:#f0f4f8;color:#1a1a2e;font-size:15px;min-height:100vh}
@@ -156,7 +156,7 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
         <div class="sub">Cervical Cytology<br>Lab Management</div>
       </div>
     </div>
-    <span class="ver">v36.5 — Bethesda 2001 / 2014</span>
+    <span class="ver">v36.6 — Bethesda 2001 / 2014</span>
   </div>
   <nav class="nav">
     <button class="nav-btn active" onclick="showPage('form')" id="nb-form">
@@ -1503,21 +1503,24 @@ function renderRec(){
       '<td style="font-size:12px">'+eh(r.clinic)+'</td><td>'+cB+'</td><td>'+hB+'</td>'+
       '<td>'+(r.price?parseInt(r.price).toLocaleString()+' ฿':'—')+'</td>'+
       '<td><div style="display:flex;gap:5px">'+
-        '<button class="btn btn-outline btn-sm" onclick="previewRec('+ri+')">ดูผล</button>'+
-        '<button class="btn btn-primary btn-sm" onclick="printRec('+ri+')">PDF</button>'+
-        '<button class="btn btn-gray btn-sm" onclick="sendEmailClinic(REC['+ri+'])" style="background:#EAF3DE;color:#1a7a3c;border-color:#1a7a3c">✉️</button>'+
-        '<button class="btn btn-gray btn-sm" onclick="sendLineClinic(REC['+ri+'])" style="background:#EAF3DE;color:#1a7a3c;border-color:#1a7a3c">LINE</button>'+
-        '<button class="btn btn-gray btn-sm" onclick="printRec('+ri+')">พิมพ์</button>'+
-        '<button class="btn btn-danger btn-sm" onclick="deleteRec('+ri+')">ลบ</button>'+
+        '<button class="btn btn-outline btn-sm" onclick="previewRec(\'' +eh(r.cyto)+ '\')">ดูผล</button>'+
+        '<button class="btn btn-primary btn-sm" onclick="printRec(\'' +eh(r.cyto)+ '\')">PDF</button>'+
+        '<button class="btn btn-gray btn-sm" onclick="sendEmailClinic(findByCyto(\'' +eh(r.cyto)+ '\'))" style="background:#EAF3DE;color:#1a7a3c;border-color:#1a7a3c">✉️</button>'+
+        '<button class="btn btn-gray btn-sm" onclick="sendLineClinic(findByCyto(\'' +eh(r.cyto)+ '\'))" style="background:#EAF3DE;color:#1a7a3c;border-color:#1a7a3c">LINE</button>'+
+        '<button class="btn btn-gray btn-sm" onclick="printRec(\'' +eh(r.cyto)+ '\')">พิมพ์</button>'+
+        '<button class="btn btn-danger btn-sm" onclick="deleteRec(\'' +eh(r.cyto)+ '\')">ลบ</button>'+
       '</div></td></tr>';
   }).join('');
   }catch(err){ console.error('[renderRec error]', err); }
 }
-function previewRec(i){_pd=REC[i];document.getElementById('prev-inner').innerHTML=buildReport(REC[i]);document.getElementById('sfn').textContent=suggestFilename(REC[i])+'.pdf';document.getElementById('mo-prev').classList.add('open')}
-function printRec(i){printDoc(REC[i])}
-async function deleteRec(i){
-  if(!confirm('ลบผลตรวจ "'+REC[i].name+'" (No.'+REC[i].cyto+') ใช่ไหม?'))return;
-  REC.splice(i,1); saveLocal(); await pushToJb(); renderRec(); updateNextNo(); toast('ลบรายการแล้ว','e');
+function findByCyto(cyto){ return REC.find(function(r){return String(r.cyto)===String(cyto);}); }
+function previewRec(cyto){var rec=findByCyto(cyto);if(!rec){toast('ไม่พบข้อมูล','e');return;}_pd=rec;document.getElementById('prev-inner').innerHTML=buildReport(rec);document.getElementById('sfn').textContent=suggestFilename(rec)+'.pdf';document.getElementById('mo-prev').classList.add('open');}
+function printRec(cyto){var rec=findByCyto(cyto);if(rec)printDoc(rec);}
+async function deleteRec(cyto){
+  var idx=REC.findIndex(function(r){return String(r.cyto)===String(cyto);});
+  if(idx<0){toast('ไม่พบรายการ','e');return;}
+  if(!confirm('ลบผลตรวจ "'+REC[idx].name+'" (No.'+REC[idx].cyto+') ใช่ไหม?'))return;
+  REC.splice(idx,1); saveLocal(); await pushToJb(); renderRec(); updateNextNo(); toast('ลบรายการแล้ว','e');
 }
 
 // ─── BATCH PRINT ──────────────────────────────────
