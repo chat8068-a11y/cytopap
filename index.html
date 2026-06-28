@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap" rel="stylesheet">
-<title>CytoPAP System v37.1 — Cervical Cytology Lab Management</title>
+<title>CytoPAP System v37.2 — Cervical Cytology Lab Management</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee','Tahoma','Cordia New','DB Helvethaica X','TH Sarabun New',Arial,sans-serif;background:#f0f4f8;color:#1a1a2e;font-size:15px;min-height:100vh}
@@ -157,7 +157,7 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
         <div class="sub">Cervical Cytology<br>Lab Management</div>
       </div>
     </div>
-    <span class="ver">v37.1 — Bethesda 2001 / 2014</span>
+    <span class="ver">v37.2 — Bethesda 2001 / 2014</span>
   </div>
   <nav class="nav">
     <button class="nav-btn active" onclick="showPage('form')" id="nb-form">
@@ -1555,7 +1555,12 @@ function renderRec(){
   var q=(document.getElementById('rec-q').value||'').toLowerCase();
   // สร้าง array ของ {rec, ri} เพื่อเก็บ index จริงจาก REC ก่อน sort
   var indexed = REC.map(function(r,i){return {rec:r, ri:i};});
-  if(q){
+  // โหมดคลินิก: filter exact match ก่อน (ถ้ามี _clinicFilter)
+  if(window._clinicFilter){
+    indexed = indexed.filter(function(x){
+      return (x.rec.clinic||'').trim() === window._clinicFilter.trim();
+    });
+  } else if(q){
     indexed = indexed.filter(function(x){
       var r=x.rec;
       return (r.name||'').toLowerCase().includes(q)
@@ -2336,9 +2341,11 @@ if(_urlClinic){
   showPage('records');
   setTimeout(function(){
     pullFromJb(true).then(function(){
-      // กรอง records เฉพาะคลินิกนี้
+      // กรอง records เฉพาะคลินิกนี้ (exact match)
+      window._clinicFilter = decodeURIComponent(_urlClinic);
       var rqEl=document.getElementById('rec-q');
-      if(rqEl){ rqEl.value=decodeURIComponent(_urlClinic); renderRec(); }
+      if(rqEl) rqEl.value='';
+      renderRec();
     }).catch(function(){});
   },300);
 } else {
