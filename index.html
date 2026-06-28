@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap" rel="stylesheet">
-<title>CytoPAP System v37 — Cervical Cytology Lab Management</title>
+<title>CytoPAP System v37.1 — Cervical Cytology Lab Management</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee','Tahoma','Cordia New','DB Helvethaica X','TH Sarabun New',Arial,sans-serif;background:#f0f4f8;color:#1a1a2e;font-size:15px;min-height:100vh}
@@ -141,7 +141,7 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
 .empty-state svg{margin:0 auto 12px;display:block;opacity:.35}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
@@ -157,7 +157,7 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
         <div class="sub">Cervical Cytology<br>Lab Management</div>
       </div>
     </div>
-    <span class="ver">v37 — Bethesda 2001 / 2014</span>
+    <span class="ver">v37.1 — Bethesda 2001 / 2014</span>
   </div>
   <nav class="nav">
     <button class="nav-btn active" onclick="showPage('form')" id="nb-form">
@@ -1268,6 +1268,7 @@ function CHN(n){var r=[];document.querySelectorAll('input[name="'+n+'"]:checked'
 function V(id){return(document.getElementById(id)||{}).value||''}
 function collectForm(){
   var examType=R('examType')||'pap_hpv'; var eDef=EXAM_DEF[examType]||{label:'ThinPrep PAP + HPV DNA'};
+  var isHpvOnly=(examType==='hpv_only'||examType==='hpv_prog');
   var sqmVal=R('sqm');
   var lsilSubs=CHN('lsil-sub');
   var hsilSubs=CHN('hsil-sub');
@@ -1314,10 +1315,12 @@ function suggestFilename(d){
 // ─── TEST DESCRIPTION TEXTS ───────────────────────
 var TDESC = {
   v1: 'MolecuTech REBA HPV-ID® is a Reversed blot Hybridization Assay System for genotyping human papilloma virus(HPV) which is a causative pathogen of cervical cancer. HPV genotypes detectable by the MolecuTech REBA HPV-ID® are the 18 high-risk HPV types (16,18,26,31,33,35,39,45,51,52,53,56,58,59,66,68,69,73), 1 probable high-risk HPV type (34) and the 13 low-risk HPV types (6,11,32,40,42,43,44,54,70,72,81,84,87). Genetic target of the kit is a polymorphic L1 gene which is expressed at the late stage of infection cycles in the host cells. Limit of Detection(LoD:copy No./reaction) of each genotype of HPV is 10³copy/rxn.',
-  v2: 'HPV DNA Genotype Testing is performed using real-time PCR technology to detect and genotype Human Papillomavirus (HPV) DNA in cervical specimens. The test identifies both high-risk (HR-HPV) types associated with cervical cancer and low-risk (LR-HPV) types associated with benign lesions, providing clinically relevant genotype-specific results for patient management.'
+  v2: 'The Diagnostic Kit is an in vitro nucleic acid amplification test for the qualitative detection of high-risk human papilloma virus (HPV type 16, 18, 31, 33, 35, 39, 45, 51, 52, 53, 56, 58, 59, 66, 68) present in exfoliated cells from female’s cervix and can identify the genotype of virus. The test result can be used as an aid in the diagnosis of a high-risk HPV infection. The lower detection limit is determined to be 400 copies/mL for each genotype.'
 };
 
 function buildReport(d){
+  // HPV Only flag
+  var isHpvOnly=(d.examType==='hpv_only'||d.examType==='hpv_prog');
   // Map examType to hi/hr for compatibility
   if(d.examType){
     if(d.examType==='pap_hpv'||d.examType==='hpv_only'||d.examType==='hpv_prog'){
@@ -1419,14 +1422,16 @@ function buildReport(d){
       '</tr>'+
     '</table>'+
 
-    // Specimen & Method
-    '<table style="width:100%;border-collapse:collapse;margin-bottom:4pt">'+
-      '<tr>'+
-        '<td style="border:1px solid #000;padding:3pt 6pt;width:65%;font-size:12.5pt;font-weight:500"><b>Type of Specimen :&nbsp;</b>'+eh(d.sp)+'</td>'+
-        '<td style="border:1px solid #000;padding:3pt 6pt;text-align:center;font-size:12pt;font-weight:500">Cytologic No. '+eh(d.cyto)+'</td>'+
-      '</tr>'+
-    '</table>'+
-    '<div style="border:1px solid #000;padding:3pt 6pt;font-size:12.5pt;font-weight:500;margin-bottom:4pt"><b>Method :&nbsp;</b>'+eh(d.mt)+'</div>'+
+    // Specimen & Method — ซ่อนเมื่อ HPV Only
+    (isHpvOnly?'':
+      '<table style="width:100%;border-collapse:collapse;margin-bottom:4pt">'+
+        '<tr>'+
+          '<td style="border:1px solid #000;padding:3pt 6pt;width:65%;font-size:12.5pt;font-weight:500"><b>Type of Specimen :&nbsp;</b>'+eh(d.sp)+'</td>'+
+          '<td style="border:1px solid #000;padding:3pt 6pt;text-align:center;font-size:12pt;font-weight:500">Cytologic No. '+eh(d.cyto)+'</td>'+
+        '</tr>'+
+      '</table>'+
+      '<div style="border:1px solid #000;padding:3pt 6pt;font-size:12.5pt;font-weight:500;margin-bottom:4pt"><b>Method :&nbsp;</b>'+eh(d.mt)+'</div>'
+    )+
 
     // Cytology
     (d.hi!=='hpv-only'&&d.examType!=='hpv_only'&&d.examType!=='hpv_prog'&&d.examType!=='biopsy'?
@@ -2148,11 +2153,13 @@ function renderQRCodes(){
   clinics.forEach(function(name){
     var url=baseUrl+'?clinic='+encodeURIComponent(name);
     var wrap=document.createElement('div');
-    wrap.style.cssText='text-align:center;background:#f7f9fd;border:1.5px solid #e0e8f5;border-radius:12px;padding:16px 20px;min-width:160px';
-    var canvas=document.createElement('canvas');
-    wrap.appendChild(canvas);
+    wrap.style.cssText='text-align:center;background:#f7f9fd;border:1.5px solid #e0e8f5;border-radius:12px;padding:16px 20px;min-width:180px;max-width:200px';
+    // div สำหรับ QR
+    var qrDiv=document.createElement('div');
+    qrDiv.style.cssText='display:flex;justify-content:center;align-items:center;min-height:140px';
+    wrap.appendChild(qrDiv);
     var label=document.createElement('div');
-    label.style.cssText='font-size:12px;font-weight:700;color:#1a3a6e;margin-top:10px;max-width:150px;word-break:break-all';
+    label.style.cssText='font-size:12px;font-weight:700;color:#1a3a6e;margin-top:10px;max-width:180px;word-break:break-all';
     label.textContent=name;
     wrap.appendChild(label);
     var cnt=REC.filter(function(r){return r.clinic===name;}).length;
@@ -2163,16 +2170,29 @@ function renderQRCodes(){
     var dlBtn=document.createElement('button');
     dlBtn.textContent='⬇ บันทึก QR';
     dlBtn.style.cssText='margin-top:8px;background:#1a3a6e;color:#fff;border:none;border-radius:6px;padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer';
-    dlBtn.onclick=function(){
-      var a=document.createElement('a');
-      a.download='QR_'+name+'.png';
-      a.href=canvas.toDataURL();
-      a.click();
-    };
     wrap.appendChild(dlBtn);
     container.appendChild(wrap);
-    if(typeof QRCode!=='undefined'){
-      QRCode.toCanvas(canvas,url,{width:140,margin:1,color:{dark:'#1a3a6e',light:'#ffffff'}},function(){});
+    // สร้าง QR ด้วย QRCode class (qrcodejs)
+    try{
+      var qr=new QRCode(qrDiv,{
+        text:url,
+        width:140,height:140,
+        colorDark:'#1a3a6e',colorLight:'#ffffff',
+        correctLevel:QRCode.CorrectLevel.M
+      });
+      // ปุ่ม download
+      dlBtn.onclick=function(){
+        var img=qrDiv.querySelector('img');
+        var canvas2=qrDiv.querySelector('canvas');
+        var a=document.createElement('a');
+        a.download='QR_'+name+'.png';
+        if(canvas2) a.href=canvas2.toDataURL();
+        else if(img) a.href=img.src;
+        if(a.href) a.click();
+      };
+    }catch(e){
+      qrDiv.innerHTML='<div style="font-size:10px;color:#e53e3e">QR Error</div>';
+      console.error('QR error:',e);
     }
   });
 }
