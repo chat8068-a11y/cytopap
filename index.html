@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap" rel="stylesheet">
-<title>CytoPAP System v44 — Cervical Cytology Lab Management</title>
+<title>CytoPAP System v45 — Cervical Cytology Lab Management</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee','Tahoma','Cordia New','DB Helvethaica X','TH Sarabun New',Arial,sans-serif;background:#f0f4f8;color:#1a1a2e;font-size:15px;min-height:100vh}
@@ -117,6 +117,7 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
   .nav-btn.active{border-left:none;background:rgba(255,255,255,.18);color:#fff}
   .nav-btn svg{width:14px;height:14px;flex-shrink:0}
   .sb-foot,.sb-status{display:none}
+  #sync-bar{flex-basis:100%;width:100%;border-top:none!important;padding:4px 12px!important;color:rgba(255,255,255,.9)!important;font-size:10.5px!important;justify-content:center;background:rgba(0,0,0,.25)!important}
   .main{flex:1;width:100%;padding:14px 12px;overflow-x:hidden}
   .page-title{font-size:18px;margin-bottom:2px}
   .page-sub{font-size:12px;margin-bottom:14px}
@@ -209,7 +210,7 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
         <div class="sub">Cervical Cytology<br>Lab Management</div>
       </div>
     </div>
-    <span class="ver">v44 — Bethesda 2001 / 2014</span>
+    <span class="ver">v45 — Bethesda 2001 / 2014</span>
   </div>
   <nav class="nav">
     <button class="nav-btn active" onclick="showPage('form')" id="nb-form">
@@ -3103,7 +3104,7 @@ if(_urlClinic){
     if(pid!=='records') b.style.display='none';
   });
   var clinicBanner=document.createElement('div');
-  clinicBanner.style.cssText='background:#1a3a6e;color:#fff;padding:8px 16px;font-size:13px;font-weight:700;text-align:center';
+  clinicBanner.style.cssText='background:#1a3a6e;color:#fff;padding:8px 16px;font-size:13px;font-weight:700;text-align:center;width:100%;flex-basis:100%;box-sizing:border-box';
   clinicBanner.textContent='🏥 '+decodeURIComponent(_urlClinic)+' — ผลตรวจของคลินิก';
   document.querySelector('.sidebar').appendChild(clinicBanner);
   showPage('records');
