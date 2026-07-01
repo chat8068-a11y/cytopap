@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap" rel="stylesheet">
-<title>CytoPAP System v50 — Cervical Cytology Lab Management</title>
+<title>CytoPAP System v51 — Cervical Cytology Lab Management</title>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
 <style>
@@ -233,7 +233,7 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
         <div class="sub">Cervical Cytology<br>Lab Management</div>
       </div>
     </div>
-    <span class="ver">v50 — Bethesda 2001 / 2014 🔒</span>
+    <span class="ver">v51 — Bethesda 2001 / 2014 🔒</span>
   </div>
   <nav class="nav">
     <button class="nav-btn active" onclick="showPage('form')" id="nb-form">
@@ -1575,26 +1575,26 @@ function fillForm(d){
   setVal('f-an',d.an); setVal('f-at',d.at); setVal('f-al',d.al);
 }
 
-function editRec(cyto){
-  var rec=findByCyto(cyto);
+function editRec(id){
+  var rec=findById(id);
   if(!rec){toast('ไม่พบข้อมูล','e');return;}
-  window._editingCyto=String(cyto);
+  window._editingId=String(id);
   fillForm(rec);
   showPage('form');
   // แสดง banner โหมดแก้ไข
   var banner=document.getElementById('edit-banner');
   if(banner){
     banner.style.display='flex';
-    banner.querySelector('#edit-banner-text').textContent='✏️ กำลังแก้ไข No.'+cyto+' — '+(rec.name||'');
+    banner.querySelector('#edit-banner-text').textContent='✏️ กำลังแก้ไข No.'+rec.cyto+' — '+(rec.name||'');
   }
   // เปลี่ยนข้อความปุ่มบันทึก
   var sb=document.getElementById('btn-save-label');
   if(sb) sb.textContent='บันทึกการแก้ไข';
   window.scrollTo(0,0);
-  toast('โหลดข้อมูล No.'+cyto+' เข้าฟอร์มแล้ว — แก้ไขแล้วกดบันทึก');
+  toast('โหลดข้อมูล No.'+rec.cyto+' เข้าฟอร์มแล้ว — แก้ไขแล้วกดบันทึก');
 }
 function cancelEdit(){
-  window._editingCyto=null;
+  window._editingId=null;
   var banner=document.getElementById('edit-banner');
   if(banner) banner.style.display='none';
   var sb=document.getElementById('btn-save-label');
@@ -1604,10 +1604,10 @@ function cancelEdit(){
 }
 
 // ─── QUICK EDIT ───────────────────────────────────────────────────────────
-function quickEdit(cyto){
-  var rec=findByCyto(cyto);
+function quickEdit(id){
+  var rec=findById(id);
   if(!rec){toast('ไม่พบข้อมูล','e');return;}
-  window._qeCyto=String(cyto);
+  window._qeId=String(id);
   // label
   document.getElementById('qe-cyto-label').innerHTML='<strong>CYTO No. '+eh(rec.cyto)+'</strong> — '+eh(rec.name||'');
   // fill clinic dropdown
@@ -1640,12 +1640,12 @@ function quickEdit(cyto){
 }
 function closeQuickEdit(){
   document.getElementById('mo-quickedit').classList.remove('open');
-  window._qeCyto=null;
+  window._qeId=null;
 }
 async function saveQuickEdit(){
-  var cyto=window._qeCyto;
-  if(!cyto){toast('ไม่พบ record','e');return;}
-  var idx=REC.findIndex(function(r){return String(r.cyto)===String(cyto);});
+  var id=window._qeId;
+  if(!id){toast('ไม่พบ record','e');return;}
+  var idx=REC.findIndex(function(r){return String(r._id)===String(id);});
   if(idx<0){toast('ไม่พบ record เดิม','e');return;}
   var rec=REC[idx];
   // เก็บค่าเดิมไว้เทียบ (สำหรับ log อนาคต)
@@ -1681,9 +1681,9 @@ async function saveQuickEdit(){
   try{ await pushToJb(); }catch(e){ console.warn('push failed',e); }
 }
 function quickEditToFull(){
-  var cyto=window._qeCyto;
+  var id=window._qeId;
   closeQuickEdit();
-  if(cyto) editRec(cyto);
+  if(id) editRec(id);
 }
 
 function collectForm(){
@@ -1933,21 +1933,22 @@ async function saveAndPrint(){
   if(!d.name){toast('กรุณากรอกชื่อ-สกุลผู้ป่วย','e');return}
   if(!d.cyto){toast('กรุณากรอก CYTO LOHY Number','e');return}
   // ── โหมดแก้ไข ──
-  if(window._editingCyto){
-    var idx=REC.findIndex(function(r){return String(r.cyto)===String(window._editingCyto);});
+  if(window._editingId){
+    var idx=REC.findIndex(function(r){return String(r._id)===String(window._editingId);});
     if(idx===-1){
-      toast('ไม่พบ record เดิม (No.'+window._editingCyto+')','e');
-      window._editingCyto=null; return;
+      toast('ไม่พบ record เดิม','e');
+      window._editingId=null; return;
     }
     var orig=REC[idx];
     // คงค่าเดิมที่ไม่ได้อยู่ในฟอร์ม + เก็บประวัติ
+    d._id=orig._id||genId();
     d.id=orig.id||Date.now();
     d.savedAt=orig.savedAt||new Date().toISOString();
     d.editedAt=new Date().toISOString();
     d.editCount=(orig.editCount||0)+1;
     REC[idx]=d; saveLocal();
-    var editedCyto=window._editingCyto;
-    window._editingCyto=null;
+    var editedCyto=d.cyto;
+    window._editingId=null;
     var banner=document.getElementById('edit-banner'); if(banner) banner.style.display='none';
     var sbl=document.getElementById('btn-save-label'); if(sbl) sbl.textContent='บันทึก & พิมพ์ PDF';
     toast('แก้ไข No.'+editedCyto+' สำเร็จ — กำลังซิงค์...');
@@ -1958,7 +1959,11 @@ async function saveAndPrint(){
     return;
   }
   // ── โหมดเพิ่มใหม่ ──
-  d.id=Date.now(); d.savedAt=new Date().toISOString();
+  var _dupe=REC.find(function(r){return String(r.cyto)===String(d.cyto);});
+  if(_dupe){
+    if(!confirm('⚠️ CYTO No. '+d.cyto+' นี้มีอยู่แล้วในระบบ\n(คนไข้: '+(_dupe.name||'-')+')\n\nถ้าเป็นคนละคน ควรใช้เลขที่ไม่ซ้ำเพื่อกันสับสน\nยืนยันบันทึกด้วยเลขซ้ำหรือไม่?')) return;
+  }
+  d._id=genId(); d.id=Date.now(); d.savedAt=new Date().toISOString();
   REC.unshift(d); saveLocal(); updateNextNo();
   toast('บันทึก "'+d.name+'" (No.'+d.cyto+') สำเร็จ — กำลังซิงค์และพิมพ์...');
   pushToJb();
@@ -1968,7 +1973,7 @@ async function saveAndPrint(){
 // ─── CLEAR FORM ───────────────────────────────────
 function clearForm(){
   // ออกจากโหมดแก้ไข (ถ้ามี)
-  window._editingCyto=null;
+  window._editingId=null;
   var _eb=document.getElementById('edit-banner'); if(_eb) _eb.style.display='none';
   var _sl=document.getElementById('btn-save-label'); if(_sl) _sl.textContent='บันทึก & พิมพ์ PDF';
   ['f-name','f-age','f-phone','f-price','f-cyto','f-rmk'].forEach(function(id){var el=document.getElementById(id);if(el)el.value=''});
@@ -2002,6 +2007,7 @@ function clearForm(){
 // ─── RECORDS ──────────────────────────────────────
 function renderRec(){
   try{
+  ensureIds();
   var q=(document.getElementById('rec-q').value||'').toLowerCase();
   // สร้าง array ของ {rec, ri} เพื่อเก็บ index จริงจาก REC ก่อน sort
   var indexed = REC.map(function(r,i){return {rec:r, ri:i};});
@@ -2038,13 +2044,13 @@ function renderRec(){
       '<td style="font-size:12px">'+eh(r.clinic)+'</td><td>'+cB+'</td><td>'+hB+'</td>'+
       '<td>'+(r.price?parseInt(r.price).toLocaleString()+' ฿':'—')+'</td>'+
       '<td><div style="display:flex;gap:5px">'+
-        '<button class="btn btn-outline btn-sm" onclick="previewRec(\'' +eh(r.cyto)+ '\')">ดูผล</button>'+
-        '<button class="btn btn-sm" onclick="quickEdit(\'' +eh(r.cyto)+ '\')" style="background:#fff8e6;color:#9a6700;border:1px solid #dd9000">✏️ แก้ไข</button>'+
-        '<button class="btn btn-primary btn-sm" onclick="printRec(\'' +eh(r.cyto)+ '\')">PDF</button>'+
-        '<button class="btn btn-gray btn-sm" onclick="sendEmailClinic(findByCyto(\'' +eh(r.cyto)+ '\'))" style="background:#EAF3DE;color:#1a7a3c;border-color:#1a7a3c">✉️</button>'+
-        '<button class="btn btn-gray btn-sm" onclick="sendLineClinic(findByCyto(\'' +eh(r.cyto)+ '\'))" style="background:#EAF3DE;color:#1a7a3c;border-color:#1a7a3c">LINE</button>'+
-        '<button class="btn btn-gray btn-sm" onclick="printRec(\'' +eh(r.cyto)+ '\')">พิมพ์</button>'+
-        '<button class="btn btn-danger btn-sm" onclick="deleteRec(\'' +eh(r.cyto)+ '\')">ลบ</button>'+
+        '<button class="btn btn-outline btn-sm" onclick="previewRec(\'' +eh(r._id)+ '\')">ดูผล</button>'+
+        '<button class="btn btn-sm" onclick="quickEdit(\'' +eh(r._id)+ '\')" style="background:#fff8e6;color:#9a6700;border:1px solid #dd9000">✏️ แก้ไข</button>'+
+        '<button class="btn btn-primary btn-sm" onclick="printRec(\'' +eh(r._id)+ '\')">PDF</button>'+
+        '<button class="btn btn-gray btn-sm" onclick="sendEmailClinic(findById(\'' +eh(r._id)+ '\'))" style="background:#EAF3DE;color:#1a7a3c;border-color:#1a7a3c">✉️</button>'+
+        '<button class="btn btn-gray btn-sm" onclick="sendLineClinic(findById(\'' +eh(r._id)+ '\'))" style="background:#EAF3DE;color:#1a7a3c;border-color:#1a7a3c">LINE</button>'+
+        '<button class="btn btn-gray btn-sm" onclick="printRec(\'' +eh(r._id)+ '\')">พิมพ์</button>'+
+        '<button class="btn btn-danger btn-sm" onclick="deleteRec(\'' +eh(r._id)+ '\')">ลบ</button>'+
       '</div></td></tr>';
   }).join('');
 
@@ -2070,16 +2076,16 @@ function renderRec(){
             '<span style="font-size:13px;color:#2b6cb0;font-weight:800;margin-left:auto">฿'+(parseFloat(r.price)||0).toLocaleString()+'</span>'+
           '</div>'+
           '<div style="display:flex;gap:6px;margin-bottom:6px">'+
-            '<button class="btn btn-outline btn-sm" style="flex:1" onclick="previewRec('+JSON.stringify(r.cyto)+')">👁 ดูผล</button>'+
-            '<button class="btn btn-sm" style="flex:1;background:#fff8e6;color:#9a6700;border:1px solid #dd9000" onclick="quickEdit('+JSON.stringify(r.cyto)+')">✏️ แก้ไข</button>'+
+            '<button class="btn btn-outline btn-sm" style="flex:1" onclick="previewRec('+JSON.stringify(r._id)+')">👁 ดูผล</button>'+
+            '<button class="btn btn-sm" style="flex:1;background:#fff8e6;color:#9a6700;border:1px solid #dd9000" onclick="quickEdit('+JSON.stringify(r._id)+')">✏️ แก้ไข</button>'+
           '</div>'+
           '<div style="display:flex;gap:6px;margin-bottom:6px">'+
-            '<button class="btn btn-sm" style="flex:1;background:#EAF3DE;color:#1a7a3c;border:1px solid #1a7a3c" onclick="sendEmailClinic(findByCyto('+JSON.stringify(r.cyto)+'))">✉️ อีเมล</button>'+
-            '<button class="btn btn-sm" style="flex:1;background:#EAF3DE;color:#1a7a3c;border:1px solid #1a7a3c" onclick="sendLineClinic(findByCyto('+JSON.stringify(r.cyto)+'))">LINE</button>'+
+            '<button class="btn btn-sm" style="flex:1;background:#EAF3DE;color:#1a7a3c;border:1px solid #1a7a3c" onclick="sendEmailClinic(findById('+JSON.stringify(r._id)+'))">✉️ อีเมล</button>'+
+            '<button class="btn btn-sm" style="flex:1;background:#EAF3DE;color:#1a7a3c;border:1px solid #1a7a3c" onclick="sendLineClinic(findById('+JSON.stringify(r._id)+'))">LINE</button>'+
           '</div>'+
           '<div style="display:flex;gap:6px">'+
-            '<button class="btn btn-primary btn-sm" style="flex:1" onclick="printRec('+JSON.stringify(r.cyto)+')">📄 PDF</button>'+
-            '<button class="btn btn-danger btn-sm" onclick="deleteRec('+JSON.stringify(r.cyto)+')">🗑</button>'+
+            '<button class="btn btn-primary btn-sm" style="flex:1" onclick="printRec('+JSON.stringify(r._id)+')">📄 PDF</button>'+
+            '<button class="btn btn-danger btn-sm" onclick="deleteRec('+JSON.stringify(r._id)+')">🗑</button>'+
           '</div>'+
         '</div>';
       }).join('');
@@ -2088,11 +2094,14 @@ function renderRec(){
 
   }catch(err){ console.error('[renderRec error]', err); }
 }
+function genId(){ return 'r'+Date.now().toString(36)+Math.random().toString(36).slice(2,9); }
+function ensureIds(){ var seen={}; for(var i=0;i<REC.length;i++){ var r=REC[i]; if(!r._id||seen[r._id]) r._id=genId(); seen[r._id]=true; } }
+function findById(id){ return REC.find(function(r){return String(r._id)===String(id);}); }
 function findByCyto(cyto){ return REC.find(function(r){return String(r.cyto)===String(cyto);}); }
-function previewRec(cyto){var rec=findByCyto(cyto);if(!rec){toast('ไม่พบข้อมูล','e');return;}_pd=rec;document.getElementById('prev-inner').innerHTML=buildReport(rec);document.getElementById('sfn').textContent=suggestFilename(rec)+'.pdf';document.getElementById('mo-prev').classList.add('open');}
-function printRec(cyto){var rec=findByCyto(cyto);if(rec)printDoc(rec);}
-async function deleteRec(cyto){
-  var idx=REC.findIndex(function(r){return String(r.cyto)===String(cyto);});
+function previewRec(id){var rec=findById(id);if(!rec){toast('ไม่พบข้อมูล','e');return;}_pd=rec;document.getElementById('prev-inner').innerHTML=buildReport(rec);document.getElementById('sfn').textContent=suggestFilename(rec)+'.pdf';document.getElementById('mo-prev').classList.add('open');}
+function printRec(id){var rec=findById(id);if(rec)printDoc(rec);}
+async function deleteRec(id){
+  var idx=REC.findIndex(function(r){return String(r._id)===String(id);});
   if(idx<0){toast('ไม่พบรายการ','e');return;}
   if(!confirm('ลบผลตรวจ "'+REC[idx].name+'" (No.'+REC[idx].cyto+') ใช่ไหม?'))return;
   REC.splice(idx,1); saveLocal(); await pushToJb(); renderRec(); updateNextNo(); toast('ลบรายการแล้ว','e');
