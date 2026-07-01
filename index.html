@@ -2,11 +2,13 @@
 <html lang="th">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; connect-src * https://api.jsonbin.io https://cytopap-lab-default-rtdb.firebaseio.com;">
+<meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; connect-src * https://api.jsonbin.io https://cytopap-lab-default-rtdb.firebaseio.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com;">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap" rel="stylesheet">
-<title>CytoPAP System v48 — Cervical Cytology Lab Management</title>
+<title>CytoPAP System v50 — Cervical Cytology Lab Management</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee','Tahoma','Cordia New','DB Helvethaica X','TH Sarabun New',Arial,sans-serif;background:#f0f4f8;color:#1a1a2e;font-size:15px;min-height:100vh}
@@ -203,6 +205,22 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
+<div id="login-overlay" style="position:fixed;inset:0;z-index:99999;background:linear-gradient(135deg,#1a3a6e,#2a4a7e);display:flex;align-items:center;justify-content:center;padding:20px">
+  <div style="background:#fff;border-radius:16px;padding:32px 28px;max-width:380px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.35)">
+    <div style="text-align:center;margin-bottom:20px">
+      <div style="font-size:26px;font-weight:800;color:#1a3a6e">🔬 CytoPAP System</div>
+      <div style="font-size:13px;color:#6b7a99;margin-top:4px">ศูนย์เซลล์วิทยาสุราษฎร์ธานี</div>
+      <div style="font-size:12px;color:#9aa7bd;margin-top:10px">เข้าสู่ระบบเพื่อใช้งาน</div>
+    </div>
+    <label style="font-size:12px;font-weight:700;color:#1a3a6e;display:block;margin-bottom:4px">อีเมล</label>
+    <input id="lg-email" type="email" autocomplete="username" style="width:100%;padding:11px 12px;border:1.5px solid #cdd7e5;border-radius:9px;font-size:15px;margin-bottom:14px" placeholder="you@example.com">
+    <label style="font-size:12px;font-weight:700;color:#1a3a6e;display:block;margin-bottom:4px">รหัสผ่าน</label>
+    <input id="lg-pass" type="password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()" style="width:100%;padding:11px 12px;border:1.5px solid #cdd7e5;border-radius:9px;font-size:15px;margin-bottom:8px" placeholder="••••••••">
+    <div id="lg-err" style="font-size:12.5px;color:#c0392b;min-height:18px;margin-bottom:8px"></div>
+    <button id="lg-btn" onclick="doLogin()" style="width:100%;padding:12px;background:#1a3a6e;color:#fff;border:none;border-radius:9px;font-size:15px;font-weight:800;cursor:pointer">เข้าสู่ระบบ</button>
+    <div id="lg-setup" style="font-size:11.5px;color:#e08a00;margin-top:14px;text-align:center;display:none">⚠️ ยังไม่ได้ตั้งค่า apiKey — แอปทำงานโหมดเดิม (ยังไม่ล็อกอิน)</div>
+  </div>
+</div>
 <div class="app">
 
 <!-- ═══ SIDEBAR ═══ -->
@@ -215,7 +233,7 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
         <div class="sub">Cervical Cytology<br>Lab Management</div>
       </div>
     </div>
-    <span class="ver">v48 — Bethesda 2001 / 2014</span>
+    <span class="ver">v50 — Bethesda 2001 / 2014 🔒</span>
   </div>
   <nav class="nav">
     <button class="nav-btn active" onclick="showPage('form')" id="nb-form">
@@ -1195,6 +1213,31 @@ var FB_URL = 'https://cytopap-lab-default-rtdb.firebaseio.com';
 var FB_PATH = '/cytopap.json';
 var syncOnline = true;
 
+// ─── FIREBASE AUTH (ระบบล็อกอิน) ──────────────────
+// ⬇️⬇️⬇️ วาง apiKey จาก Firebase Console ตรงนี้ (แทนที่ PASTE_YOUR_API_KEY_HERE) ⬇️⬇️⬇️
+var firebaseConfig = {
+  apiKey: "AIzaSyAnRd61H0vtn8hsvBM93CgO0MRZR_0l_wM",
+  authDomain: "cytopap-lab.firebaseapp.com",
+  databaseURL: "https://cytopap-lab-default-rtdb.firebaseio.com",
+  projectId: "cytopap-lab",
+  storageBucket: "cytopap-lab.firebasestorage.app",
+  messagingSenderId: "993701756891",
+  appId: "1:993701756891:web:c39adff321530c533bb1fe"
+};
+// ⬆️⬆️⬆️ ตรวจ authDomain/projectId ให้ตรงกับ config ของคุณด้วย ⬆️⬆️⬆️
+var AUTH_ENABLED = (firebaseConfig.apiKey.indexOf('PASTE_')!==0 && firebaseConfig.apiKey.length>15);
+var _idToken = null;   // token สำหรับแนบไปกับทุก request
+var _isAnon = false;   // true = โหมดคลินิก (ดูอย่างเดียว)
+
+// สร้าง URL Firebase พร้อมแนบ token (ถ้าเปิดล็อกอิน)
+function fbPath(withT){
+  var url = FB_URL + FB_PATH;
+  var params = [];
+  if(withT) params.push('t=' + Date.now());
+  if(AUTH_ENABLED && _idToken) params.push('auth=' + _idToken);
+  return params.length ? (url + '?' + params.join('&')) : url;
+}
+
 // ─── LOCAL STORAGE ────────────────────────────────
 function loadData(){
   try{
@@ -1315,7 +1358,7 @@ async function pushToJb(){
       },
       version: Date.now()
     };
-    var res = await fetch(FB_URL+FB_PATH, {
+    var res = await fetch(fbPath(false), {
       method: 'PUT',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify(payload)
@@ -1329,7 +1372,7 @@ async function pushToJb(){
 
 async function pullFromJb(silent){
   try{
-    var res = await fetch(FB_URL+FB_PATH+'?t='+Date.now());
+    var res = await fetch(fbPath(true));
     if(!res.ok) throw new Error('HTTP '+res.status);
     var data = await res.json();
     if(data && data.records){
@@ -2351,7 +2394,7 @@ function clearJbConfig(){
 // ────────────────────────────────────────────────────────────────
 async function testJbConnection(){
   try{
-    var res = await fetch(FB_URL+FB_PATH+'?t='+Date.now());
+    var res = await fetch(fbPath(true));
     if(!res.ok) throw new Error('HTTP '+res.status);
     toast('เชื่อมต่อ Firebase สำเร็จ ✅');
     setSyncStatus(true,'เชื่อมต่อสำเร็จ');
@@ -3110,7 +3153,6 @@ setupPills();
 // ตรวจสอบ ?clinic=xxx ใน URL — โหมดคลินิกดูผลตัวเอง
 var _urlClinic=(new URLSearchParams(window.location.search)).get('clinic')||'';
 if(_urlClinic){
-  // โหมดคลินิก: ซ่อนเมนูที่ไม่จำเป็น แสดงเฉพาะประวัติผลตรวจของคลินิกนั้น
   document.querySelectorAll('.nav-btn').forEach(function(b){
     var pid=b.id.replace('nb-','');
     if(pid!=='records') b.style.display='none';
@@ -3119,43 +3161,95 @@ if(_urlClinic){
   clinicBanner.style.cssText='background:#1a3a6e;color:#fff;padding:8px 16px;font-size:13px;font-weight:700;text-align:center;width:100%;flex-basis:100%;box-sizing:border-box';
   clinicBanner.textContent='🏥 '+decodeURIComponent(_urlClinic)+' — ผลตรวจของคลินิก';
   document.querySelector('.sidebar').appendChild(clinicBanner);
-  showPage('records');
-  setTimeout(function(){
-    pullFromJb(true).then(function(){
-      // กรอง records เฉพาะคลินิกนี้ (exact match)
+  hideLogin(); // โหมดคลินิกไม่ต้องเห็นหน้าล็อกอิน
+}
+showPage('records');
+
+// ดึงข้อมูลจาก cloud (เรียกหลัง auth พร้อม)
+function bootCloud(){
+  var _backupClinics=(CFG.clinics&&CFG.clinics.length)?JSON.parse(JSON.stringify(CFG.clinics)):null;
+  pullFromJb(true).then(function(){
+    if(_urlClinic){
       window._clinicFilter = decodeURIComponent(_urlClinic);
-      var rqEl=document.getElementById('rec-q');
-      if(rqEl) rqEl.value='';
+      var rqEl=document.getElementById('rec-q'); if(rqEl) rqEl.value='';
       renderRec();
-    }).catch(function(){});
-  },300);
-} else {
-  showPage('records');
-  setTimeout(function(){
-    var _backupClinics=(CFG.clinics&&CFG.clinics.length)?JSON.parse(JSON.stringify(CFG.clinics)):null;
-    pullFromJb(true).then(function(){
+    } else {
       if(_backupClinics&&_backupClinics.length&&(!CFG.clinics||!CFG.clinics.length)){
         CFG.clinics=_backupClinics; fillClinicSelect(); saveLocal();
         setTimeout(function(){pushToJb();},500);
       }
       checkBackupReminder();
-    }).catch(function(){});
-  },300);
-}
-// ดึงข้อมูลจาก Firebase หลัง DOM พร้อม
-setTimeout(function(){
-  // สำรอง clinics ก่อน pull (ป้องกัน Firebase ทับ)
-  var _backupClinics = (CFG.clinics && CFG.clinics.length) ? JSON.parse(JSON.stringify(CFG.clinics)) : null;
-  pullFromJb(true).then(function(){
-    // ถ้า Firebase ทำให้ clinics หาย ให้คืนค่าจาก backup และ push ขึ้น
-    if(_backupClinics && _backupClinics.length && (!CFG.clinics || !CFG.clinics.length)){
-      CFG.clinics = _backupClinics;
-      fillClinicSelect();
-      saveLocal();
-      setTimeout(function(){ pushToJb(); }, 500);
     }
   }).catch(function(){});
-}, 300);
+}
+
+// ─── ระบบล็อกอิน ─────────────────────────────────
+function hideLogin(){ var o=document.getElementById('login-overlay'); if(o) o.style.display='none'; }
+function loginError(msg){ var e=document.getElementById('lg-err'); if(e) e.textContent=msg||''; }
+function mapAuthErr(e){
+  var c=(e&&e.code)||'';
+  if(c.indexOf('wrong-password')>=0||c.indexOf('invalid-credential')>=0) return 'อีเมลหรือรหัสผ่านไม่ถูกต้อง';
+  if(c.indexOf('user-not-found')>=0) return 'ไม่พบบัญชีนี้';
+  if(c.indexOf('invalid-email')>=0) return 'รูปแบบอีเมลไม่ถูกต้อง';
+  if(c.indexOf('too-many-requests')>=0) return 'พยายามหลายครั้งเกินไป ลองใหม่ภายหลัง';
+  if(c.indexOf('network')>=0) return 'เชื่อมต่ออินเทอร์เน็ตไม่ได้';
+  return (e&&e.message)||'เข้าสู่ระบบไม่สำเร็จ';
+}
+function doLogin(){
+  if(!AUTH_ENABLED){ hideLogin(); return; }
+  var em=(document.getElementById('lg-email').value||'').trim();
+  var pw=document.getElementById('lg-pass').value||'';
+  if(!em||!pw){ loginError('กรุณากรอกอีเมลและรหัสผ่าน'); return; }
+  var btn=document.getElementById('lg-btn'); btn.disabled=true; btn.textContent='กำลังเข้าสู่ระบบ...';
+  loginError('');
+  firebase.auth().signInWithEmailAndPassword(em,pw).catch(function(e){
+    loginError(mapAuthErr(e)); btn.disabled=false; btn.textContent='เข้าสู่ระบบ';
+  });
+}
+function doLogout(){
+  if(!AUTH_ENABLED) return;
+  if(!confirm('ต้องการออกจากระบบ?')) return;
+  firebase.auth().signOut().then(function(){ location.reload(); });
+}
+function addLogoutBtn(){
+  if(document.getElementById('logout-btn')) return;
+  var sb=document.querySelector('.sidebar'); if(!sb) return;
+  var b=document.createElement('button');
+  b.id='logout-btn'; b.textContent='🚪 ออกจากระบบ'; b.onclick=doLogout;
+  b.style.cssText='margin:10px 12px;padding:8px 12px;background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:8px;font-size:12.5px;font-weight:700;cursor:pointer;width:calc(100% - 24px)';
+  sb.appendChild(b);
+}
+
+if(!AUTH_ENABLED){
+  // โหมดเดิม (ยังไม่ตั้ง apiKey) — ไม่ล็อกอิน แอปทำงานปกติ
+  var _su=document.getElementById('lg-setup'); if(_su) _su.style.display='block';
+  hideLogin();
+  setTimeout(bootCloud, 300);
+} else {
+  firebase.initializeApp(firebaseConfig);
+  firebase.auth().onAuthStateChanged(function(user){
+    if(user){
+      _isAnon = user.isAnonymous;
+      user.getIdToken().then(function(t){
+        _idToken=t; hideLogin();
+        if(!_isAnon) addLogoutBtn();
+        bootCloud();
+        setInterval(function(){
+          var u=firebase.auth().currentUser;
+          if(u) u.getIdToken(true).then(function(nt){_idToken=nt;}).catch(function(){});
+        }, 50*60*1000);
+      });
+    } else {
+      if(_urlClinic){
+        firebase.auth().signInAnonymously().catch(function(e){
+          hideLogin(); toast('โหมดคลินิก: '+mapAuthErr(e),'e',6000); bootCloud();
+        });
+      } else {
+        var o=document.getElementById('login-overlay'); if(o) o.style.display='flex';
+      }
+    }
+  });
+}
 </script>
 </body>
 </html>
