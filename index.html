@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap" rel="stylesheet">
-<title>CytoPAP System v53 — Cervical Cytology Lab Management</title>
+<title>CytoPAP System v54 — Cervical Cytology Lab Management</title>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
 <style>
@@ -233,7 +233,7 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
         <div class="sub">Cervical Cytology<br>Lab Management</div>
       </div>
     </div>
-    <span class="ver">v53 — Bethesda 2001 / 2014 🔒</span>
+    <span class="ver">v54 — Bethesda 2001 / 2014 🔒</span>
   </div>
   <nav class="nav">
     <button class="nav-btn active" onclick="showPage('form')" id="nb-form">
@@ -2112,10 +2112,16 @@ function findById(id){ return REC.find(function(r){return String(r._id)===String
 // ตรวจผลเสี่ยงสูง: HPV 16/18 หรือ HSIL/มะเร็ง → ป้ายแดงเตือน
 function isHighRisk(r){
   if(!r) return false;
-  var hr=r.hrGenos||[];
-  if(hr.indexOf('16')>=0||hr.indexOf('18')>=0||hr.indexOf(16)>=0||hr.indexOf(18)>=0) return true;
-  var t=((r.sqm||'')+' '+(r.gln||'')+' '+(r.cat||'')).toUpperCase();
-  if(t.indexOf('HSIL')>=0||t.indexOf('CARCINOMA')>=0||t.indexOf('MALIGNAN')>=0||t.indexOf('AGC')>=0||t.indexOf('ADENOCARCINOMA')>=0) return true;
+  // HPV 16 หรือ 18 (เฉพาะเมื่อผลตรวจพบ)
+  if(r.hr==='Detected'){
+    var hr=r.hrGenos||[];
+    if(hr.indexOf('16')>=0||hr.indexOf('18')>=0) return true;
+  }
+  // ต้องเป็นเคสผิดปกติเท่านั้น ถึงเช็คผล squamous/glandular
+  if(r.cat==='Epithelial Cell Abnormality'){
+    var t=((r.sqm||'')+' '+(r.gln||'')).toUpperCase();
+    if(t.indexOf('HSIL')>=0||t.indexOf('CARCINOMA')>=0||t.indexOf('AGC')>=0||t.indexOf('ASC-H')>=0) return true;
+  }
   return false;
 }
 function findByCyto(cyto){ return REC.find(function(r){return String(r.cyto)===String(cyto);}); }
