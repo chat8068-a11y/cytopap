@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap" rel="stylesheet">
-<title>CytoPAP System v51 — Cervical Cytology Lab Management</title>
+<title>CytoPAP System v53 — Cervical Cytology Lab Management</title>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
 <style>
@@ -233,7 +233,7 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
         <div class="sub">Cervical Cytology<br>Lab Management</div>
       </div>
     </div>
-    <span class="ver">v51 — Bethesda 2001 / 2014 🔒</span>
+    <span class="ver">v53 — Bethesda 2001 / 2014 🔒</span>
   </div>
   <nav class="nav">
     <button class="nav-btn active" onclick="showPage('form')" id="nb-form">
@@ -1745,6 +1745,8 @@ function buildReport(d){
   if(d.examType){
     if(d.examType==='pap_hpv'||d.examType==='hpv_only'||d.examType==='hpv_prog'){
       if(!d.hi||d.hi==='no') d.hi='yes';
+    } else if(d.examType==='biopsy'){
+      d.hi='no';
     } else {
       if(!d.hi) d.hi='no';
     }
@@ -1853,17 +1855,22 @@ function buildReport(d){
       '<div style="border:1px solid #000;padding:3pt 6pt;font-size:12.5pt;font-weight:500;margin-bottom:4pt"><b>Method :&nbsp;</b>'+eh(d.mt)+'</div>'
     )+
 
-    // Cytology
-    (d.hi!=='hpv-only'&&d.examType!=='hpv_only'&&d.examType!=='hpv_prog'&&d.examType!=='biopsy'?
+    // Cytology / Biopsy / HPV-only — แสดงตามประเภทการตรวจ
+    (d.examType==='biopsy'?
+      '<div style="border:1px solid #000;padding:5pt 8pt;font-size:12.5pt;font-weight:500;margin-bottom:4pt;line-height:1.55">'+
+        '<div><b>Histopathologic Examination (ผลตรวจชิ้นเนื้อ) :</b></div>'+
+        '<div style="padding-left:12pt">'+eh(d.cat||d.rmk||'-')+'</div>'+
+      '</div>'+(d.cat&&d.rmk?rmkDiv:'')
+    :(d.hi==='hpv-only'||d.examType==='hpv_only'||d.examType==='hpv_prog'?
+      '<div style="border:1px solid #ccc;padding:3pt 6pt;font-size:12pt;font-weight:bold;margin-bottom:4pt;color:#555">HPV DNA Testing Only</div>'
+    :
       '<div style="border:1px solid #000;padding:5pt 8pt;font-size:12.5pt;font-weight:500;margin-bottom:4pt;line-height:1.55">'+
         '<div><b>Specimen Adequacy :&nbsp;</b>'+eh(d.adq)+'</div>'+
         '<div style="padding-left:12pt">'+eh(d.tz)+'</div>'+
         '<div style="margin-top:3pt"><b>General Categorization :&nbsp;</b></div>'+
         '<div style="padding-left:12pt">'+eh(d.cat)+'</div>'+
         orgLine+nnvLine+rccLine+epiLine+
-      '</div>'+rmkDiv
-    :
-      '<div style="border:1px solid #ccc;padding:3pt 6pt;font-size:12pt;font-weight:bold;margin-bottom:4pt;color:#555">HPV DNA Testing Only</div>')+
+      '</div>'+rmkDiv))+
 
     hpvBlock+
 
@@ -2038,8 +2045,10 @@ function renderRec(){
     var cB=r.cat==='Negative for Intraepithelial Lesion or Malignancy'?'<span class="badge b-green">Negative</span>':'<span class="badge b-red">'+(r.cat||'—')+'</span>';
     var hB=r.hi==='yes'?(r.hr==='Nondetected'?'<span class="badge b-green">Nondetected</span>':'<span class="badge b-red">Detected</span>'):'<span class="badge b-gray">N/A</span>';
     var eL='<span class="badge b-gray" style="font-size:11px">'+eh(r.examLabel||r.examType||'—')+'</span>';
-    return '<tr>'+
-      '<td><strong style="color:#1a3a6e;font-size:14px">'+eh(r.cyto)+'</strong></td>'+
+    var hiRisk=isHighRisk(r);
+    var alertB=hiRisk?'<br><span style="display:inline-block;margin-top:3px;background:#c0392b;color:#fff;font-size:9.5px;font-weight:800;padding:2px 7px;border-radius:20px">⚠ ผลผิดปกติ</span>':'';
+    return '<tr'+(hiRisk?' style="background:#fff5f5"':'')+'>'+
+      '<td><strong style="color:#1a3a6e;font-size:14px">'+eh(r.cyto)+'</strong>'+alertB+'</td>'+
       '<td>'+eh(r.name)+'</td><td>'+eh(r.age)+'</td><td>'+fd(r.dc)+'</td>'+
       '<td style="font-size:12px">'+eh(r.clinic)+'</td><td>'+cB+'</td><td>'+hB+'</td>'+
       '<td>'+(r.price?parseInt(r.price).toLocaleString()+' ฿':'—')+'</td>'+
@@ -2064,7 +2073,10 @@ function renderRec(){
         var catColor=r.cat==='Negative for Intraepithelial Lesion or Malignancy'?'#1a7a3c':r.cat==='Epithelial Cell Abnormality'?'#e53e3e':'#805ad5';
         var catShort=r.cat==='Negative for Intraepithelial Lesion or Malignancy'?'Negative':r.cat==='Epithelial Cell Abnormality'?'Abnormality':(r.cat||'—');
         var hpv=r.hi==='yes'?(r.hr==='Nondetected'?'<span style="background:#d4edda;color:#1a7a3c;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700">Nondetected</span>':'<span style="background:#fde8e8;color:#e53e3e;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700">Detected</span>'):'<span style="background:#f0f4f8;color:#6b7a99;padding:2px 8px;border-radius:20px;font-size:11px">N/A</span>';
-        return '<div style="background:#fff;border:1.5px solid #e0e8f5;border-radius:12px;padding:14px 16px;margin-bottom:10px;box-shadow:0 1px 6px rgba(26,58,110,.08)">'+
+        var hiRisk=isHighRisk(r);
+        var alertBar=hiRisk?'<div style="background:#c0392b;color:#fff;font-size:12px;font-weight:800;text-align:center;padding:5px;border-radius:8px;margin-bottom:8px">⚠ ผลผิดปกติ — ควรติดตาม</div>':'';
+        return '<div style="background:#fff;border:1.5px solid '+(hiRisk?'#c0392b':'#e0e8f5')+';border-radius:12px;padding:14px 16px;margin-bottom:10px;box-shadow:0 1px 6px rgba(26,58,110,.08)">'+
+          alertBar+
           '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">'+
             '<span style="font-size:20px;font-weight:800;color:#1a3a6e">'+eh(r.cyto)+'</span>'+
             '<span style="font-size:11px;color:'+catColor+';font-weight:700;background:'+catColor+'18;padding:3px 10px;border-radius:20px">'+catShort+'</span>'+
@@ -2097,6 +2109,15 @@ function renderRec(){
 function genId(){ return 'r'+Date.now().toString(36)+Math.random().toString(36).slice(2,9); }
 function ensureIds(){ var seen={}; for(var i=0;i<REC.length;i++){ var r=REC[i]; if(!r._id||seen[r._id]) r._id=genId(); seen[r._id]=true; } }
 function findById(id){ return REC.find(function(r){return String(r._id)===String(id);}); }
+// ตรวจผลเสี่ยงสูง: HPV 16/18 หรือ HSIL/มะเร็ง → ป้ายแดงเตือน
+function isHighRisk(r){
+  if(!r) return false;
+  var hr=r.hrGenos||[];
+  if(hr.indexOf('16')>=0||hr.indexOf('18')>=0||hr.indexOf(16)>=0||hr.indexOf(18)>=0) return true;
+  var t=((r.sqm||'')+' '+(r.gln||'')+' '+(r.cat||'')).toUpperCase();
+  if(t.indexOf('HSIL')>=0||t.indexOf('CARCINOMA')>=0||t.indexOf('MALIGNAN')>=0||t.indexOf('AGC')>=0||t.indexOf('ADENOCARCINOMA')>=0) return true;
+  return false;
+}
 function findByCyto(cyto){ return REC.find(function(r){return String(r.cyto)===String(cyto);}); }
 function previewRec(id){var rec=findById(id);if(!rec){toast('ไม่พบข้อมูล','e');return;}_pd=rec;document.getElementById('prev-inner').innerHTML=buildReport(rec);document.getElementById('sfn').textContent=suggestFilename(rec)+'.pdf';document.getElementById('mo-prev').classList.add('open');}
 function printRec(id){var rec=findById(id);if(rec)printDoc(rec);}
@@ -2135,8 +2156,14 @@ function printBatch(){
   selected.sort(function(a,b){return(parseInt(a.cyto)||0)-(parseInt(b.cyto)||0)});
   if(!selected.length){toast('กรุณาเลือกอย่างน้อย 1 รายการ','e');return}
   var pages=selected.map(function(d){return buildReport(d)}).join('');
-  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>CYTO Batch Print</title>'+
-    '<style>@page{size:A4;margin:0}body{margin:0;padding:0}*{box-sizing:border-box}div[style*="page-break-after"]:last-child{page-break-after:avoid!important}</style>'+
+  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap" rel="stylesheet"><title>CYTO Batch Print</title>'+
+    '<style>'+
+    '@page{size:A4;margin:0}'+
+    'html,body{margin:0;padding:0;width:210mm}'+
+    'body{font-family:"Sarabun","TH Sarabun New","Leelawadee UI","Leelawadee","Tahoma",serif}'+
+    '*{box-sizing:border-box;-webkit-print-color-adjust:exact}'+
+    'div[style*="page-break-after"]:last-child{page-break-after:avoid!important}'+
+    '</style>'+
     '</head><body>'+pages+
     '<scr'+'ipt>window.onload=function(){setTimeout(function(){window.print();},400);}<\/scr'+'ipt></body></html>';
   var w=window.open('','_blank','width=960,height=760');
