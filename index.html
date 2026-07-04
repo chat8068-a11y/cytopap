@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap" rel="stylesheet">
-<title>CytoPAP System v56 — Cervical Cytology Lab Management</title>
+<title>CytoPAP System v57 — Cervical Cytology Lab Management</title>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
 <style>
@@ -233,7 +233,7 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
         <div class="sub">Cervical Cytology<br>Lab Management</div>
       </div>
     </div>
-    <span class="ver">v56 — Bethesda 2001 / 2014 🔒</span>
+    <span class="ver">v57 — Bethesda 2001 / 2014 🔒</span>
   </div>
   <nav class="nav">
     <button class="nav-btn active" onclick="showPage('form')" id="nb-form">
@@ -2780,6 +2780,25 @@ function renderStats(){
 }
 
 // ── Export Excel รายเดือน ─────────────────────────
+// หาว่าคลินิก+ปีนี้ มีข้อมูลเดือนไหนบ้าง (ช่วยตอนไม่พบข้อมูล)
+function clinicMonths(cSel,yAD){
+  var mset={};
+  REC.forEach(function(r){
+    if(cSel&&(r.clinic||'').trim()!==cSel) return;
+    var ds=r.dc||r.dr||''; var p=ds.split('-');
+    if(p.length!==3) return;
+    var ry=parseInt(p[0]),rm=parseInt(p[1]);
+    if(ry===yAD||ry===(yAD+543)) mset[rm]=(mset[rm]||0)+1;
+  });
+  return mset;
+}
+function monthsHint(cSel,yAD){
+  var mn=['','ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  var ms=clinicMonths(cSel,yAD);
+  var keys=Object.keys(ms).sort(function(a,b){return a-b;});
+  if(!keys.length) return (cSel?'คลินิกนี้':'ปีนี้')+'ยังไม่มีข้อมูลเลย';
+  return 'คลินิกนี้มีข้อมูลในเดือน: '+keys.map(function(m){return mn[m]+'('+ms[m]+')';}).join(', ')+' — ลองเลือกเดือนนั้น หรือ "ทุกเดือน"';
+}
 function exportExcelMonth(){
   if(!REC.length){toast('ยังไม่มีข้อมูล','e');return;}
   if(typeof XLSX==='undefined'){toast('กำลังโหลด XLSX...','e');return;}
@@ -2797,7 +2816,7 @@ function exportExcelMonth(){
     var matchC=!cSel||(r.clinic||'').trim()===cSel;
     return matchY&&matchM&&matchC;
   });
-  if(!filtered.length){toast('ไม่พบข้อมูลตามเงื่อนไข','e');return;}
+  if(!filtered.length){toast('ไม่พบข้อมูลตามเงื่อนไข — '+monthsHint(cSel,yAD),'e',7000);return;}
   var title=(mSel?thM[mSel]+' ':'')+ySel+(cSel?' — '+cSel:'');
   var wsData=[['รายงานประจำ'+title],[''],
     ['CYTO No.','ชื่อ-สกุล','อายุ','คลินิก','วันที่รับ','วันที่รายงาน','ผล Pap','HPV','Genotype','ราคา (฿)']];
@@ -2850,7 +2869,7 @@ function exportInvoice(){
     var matchM=mSel===0||rm===mSel;
     return matchY&&matchM&&(r.clinic||'').trim()===cSel;
   });
-  if(!filtered.length){toast('ไม่พบข้อมูลคลินิกนี้','e');return;}
+  if(!filtered.length){toast('ไม่พบข้อมูล — '+monthsHint(cSel,yAD),'e',7000);return;}
   // เรียงตามวันที่เก็บตัวอย่าง (dc) จากเก่าไปใหม่ — ถ้าไม่มี dc ใช้ dr แทน
   filtered.sort(function(a,b){
     var da=(a.dc||a.dr||'');
