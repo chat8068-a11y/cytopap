@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap" rel="stylesheet">
-<title>CytoPAP System v54 — Cervical Cytology Lab Management</title>
+<title>CytoPAP System v56 — Cervical Cytology Lab Management</title>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
 <style>
@@ -233,7 +233,7 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
         <div class="sub">Cervical Cytology<br>Lab Management</div>
       </div>
     </div>
-    <span class="ver">v54 — Bethesda 2001 / 2014 🔒</span>
+    <span class="ver">v56 — Bethesda 2001 / 2014 🔒</span>
   </div>
   <nav class="nav">
     <button class="nav-btn active" onclick="showPage('form')" id="nb-form">
@@ -1064,6 +1064,9 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
       <button class="add-cl" onclick="restoreClinicsFromRecords()" style="margin-left:8px;background:#c0392b;color:#fff;border:none">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
         กู้คืนคลินิกจาก Records
+      </button>
+      <button class="add-cl" onclick="cleanClinicNames()" style="margin-left:8px;background:#805ad5;color:#fff;border:none">
+        🧹 จัดระเบียบชื่อคลินิก
       </button>
     </div>
   </div>
@@ -2309,8 +2312,8 @@ function printBilling(){
 }
 function initBillingPage(){
   var now=new Date();
-  document.getElementById('bill-month').value=now.getMonth()+1;
-  document.getElementById('bill-month-to').value=now.getMonth()+1;
+  document.getElementById('bill-month').value=1;              // เริ่มต้น: มกราคม
+  document.getElementById('bill-month-to').value=12;          // ถึง: ธันวาคม (แสดงทั้งปี)
   document.getElementById('bill-year').value=now.getFullYear()+543;
   // Fill clinic select จาก records จริงๆ ไม่ใช่จาก CFG
   var cs=document.getElementById('bill-clinic');
@@ -2326,6 +2329,8 @@ function initBillingPage(){
       cs.innerHTML+='<option value="'+eh(n)+'">'+eh(n)+'</option>';
     });
   }
+  // แสดงสรุปทันที (ทั้งปี ทุกคลินิก) ให้เห็นข้อมูลครบ ไม่ต้องกดเอง
+  if(REC&&REC.length) renderBilling();
 }
 
 // ─── SETTINGS ─────────────────────────────────────
@@ -2486,6 +2491,51 @@ async function syncClinicsToCloud(){
   }
   await pushToJb();
   toast('ซิงค์รายชื่อคลินิก '+CFG.clinics.length+' รายการขึ้น Cloud สำเร็จ ✅');
+}
+// รวมช่องว่างซ้อน + ตัดหน้า-หลัง (ข้อมูลอยู่ครบ)
+function normClinic(s){ return (s||'').replace(/\s+/g,' ').trim(); }
+async function cleanClinicNames(){
+  if(!REC||!REC.length){ toast('ยังไม่มีข้อมูล','e'); return; }
+  // หาว่าจะเปลี่ยนชื่ออะไรบ้าง
+  var changeMap={}; var affected=0;
+  REC.forEach(function(r){
+    var old=r.clinic||''; var neu=normClinic(old);
+    if(old!==neu){ if(!changeMap[old]) changeMap[old]={to:neu,count:0}; changeMap[old].count++; affected++; }
+  });
+  var keys=Object.keys(changeMap);
+  if(!keys.length){ toast('ชื่อคลินิกสะอาดอยู่แล้ว ไม่มีอะไรต้องแก้ ✅','i'); return; }
+  // สร้างข้อความยืนยัน แสดงตัวอย่างการเปลี่ยน
+  var preview=keys.map(function(k){
+    return '• "'+k+'"\n   → "'+changeMap[k].to+'" ('+changeMap[k].count+' ราย)';
+  }).join('\n');
+  var msg='🧹 จัดระเบียบชื่อคลินิก\n\n'+
+    'จะปรับชื่อ '+keys.length+' แบบ (รวม '+affected+' รายการ):\n\n'+preview+'\n\n'+
+    '✅ ข้อมูลทุกรายการอยู่ครบ (แก้เฉพาะช่องว่างในชื่อ)\n'+
+    '✅ ระบบจะสำรองข้อมูลปัจจุบันอัตโนมัติก่อน\n\n'+
+    'ดำเนินการต่อหรือไม่?';
+  if(!confirm(msg)) return;
+  // สำรองก่อน (safety net)
+  try{ downloadBackup(true); }catch(e){}
+  // ปรับชื่อในทุก record
+  REC.forEach(function(r){ if(r.clinic) r.clinic=normClinic(r.clinic); });
+  // ปรับ + รวมชื่อซ้ำใน CFG.clinics
+  if(CFG.clinics&&CFG.clinics.length){
+    var seen={}; var merged=[];
+    CFG.clinics.forEach(function(c){
+      var isObj=typeof c==='object';
+      var name=normClinic(isObj?(c.name||''):c);
+      if(!name) return;
+      if(seen[name]) return; // รวมชื่อซ้ำ
+      seen[name]=true;
+      if(isObj){ c.name=name; merged.push(c); } else { merged.push(name); }
+    });
+    CFG.clinics=merged;
+  }
+  saveLocal(); fillClinicSelect();
+  if(typeof renderRec==='function') renderRec();
+  toast('จัดระเบียบชื่อคลินิกแล้ว '+affected+' รายการ 🧹 — กำลังซิงค์...','i',4000);
+  try{ await pushToJb(); toast('จัดระเบียบ + ซิงค์ขึ้น Cloud เรียบร้อย ✅'); }
+  catch(e){ toast('จัดระเบียบในเครื่องแล้ว แต่ซิงค์ Cloud ไม่สำเร็จ ลองใหม่','e',5000); }
 }
 async function saveSettings(){
   ['l1','l2','nth','nen','footer'].forEach(function(k){var e=document.getElementById('s-'+k);if(e)CFG[k]=e.value.trim()});
