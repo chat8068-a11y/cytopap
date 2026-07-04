@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap" rel="stylesheet">
-<title>CytoPAP System v57 — Cervical Cytology Lab Management</title>
+<title>CytoPAP System v58 — Cervical Cytology Lab Management</title>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
 <style>
@@ -233,7 +233,7 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
         <div class="sub">Cervical Cytology<br>Lab Management</div>
       </div>
     </div>
-    <span class="ver">v57 — Bethesda 2001 / 2014 🔒</span>
+    <span class="ver">v58 — Bethesda 2001 / 2014 🔒</span>
   </div>
   <nav class="nav">
     <button class="nav-btn active" onclick="showPage('form')" id="nb-form">
@@ -296,7 +296,7 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
       <div class="grid g3" style="margin-bottom:14px">
         <div class="field span2">
           <label>ชื่อ-สกุล (คำนำหน้า ชื่อ นามสกุล)</label>
-          <input id="f-name" type="text" placeholder="คุณ ภัสรา คงทอง">
+          <input id="f-name" type="text" placeholder="คุณ ภัสรา คงทอง" onblur="checkNameHistory(this.value)">
         </div>
         <div class="field">
           <label>อายุ (ปี)</label>
@@ -1203,6 +1203,15 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
   </div>
 </div>
 
+<div class="modal-bg" id="mo-namehist">
+  <div class="modal" style="max-width:600px">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid #e0e8f5">
+      <span style="font-size:16px;font-weight:800;color:#1a3a6e">📋 ประวัติคนไข้ชื่อนี้</span>
+      <button onclick="closeNameHist()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#6b7a99">✕</button>
+    </div>
+    <div class="modal-body" id="namehist-body" style="padding:18px 20px;max-height:70vh;overflow-y:auto"></div>
+  </div>
+</div>
 <div id="toast"></div>
 
 <script>
@@ -1498,7 +1507,35 @@ function getNextNo(){
 }
 function updateNextNo(){ var el=document.getElementById('next-no'); if(el) el.textContent=getNextNo(); }
 function fillNextNo(){ document.getElementById('f-cyto').value=getNextNo(); }
-
+// ป๊อปอัปประวัติเมื่อกรอกชื่อซ้ำกับคนไข้เดิม
+function checkNameHistory(name){
+  name=(name||'').trim();
+  if(!name||name.length<2){ return; }
+  var matches=REC.filter(function(r){
+    return (r.name||'').trim()===name && String(r._id||'')!==String(window._editingId||'__none__');
+  });
+  if(!matches.length){ return; }
+  matches.sort(function(a,b){return (parseInt(b.cyto)||0)-(parseInt(a.cyto)||0);});
+  var rows=matches.map(function(r){
+    var risk=isHighRisk(r)?' <span style="background:#c0392b;color:#fff;font-size:10px;padding:1px 6px;border-radius:20px">⚠</span>':'';
+    var papTxt=r.cat==='Negative for Intraepithelial Lesion or Malignancy'?'Negative':(r.cat==='Epithelial Cell Abnormality'?'Abnormality':(r.cat||'-'));
+    var hpvTxt=r.hi==='yes'?(' / HPV:'+eh(r.hr||'-')):'';
+    return '<tr style="border-bottom:1px solid #eee">'+
+      '<td style="padding:7px 8px;font-weight:700;color:#1a3a6e;white-space:nowrap">'+eh(r.cyto)+risk+'</td>'+
+      '<td style="padding:7px 8px;white-space:nowrap">'+fd(r.dc||r.dr)+'</td>'+
+      '<td style="padding:7px 8px;font-size:12px">'+eh(r.examLabel||r.examType||'-')+'</td>'+
+      '<td style="padding:7px 8px;font-size:12px">'+eh(papTxt)+hpvTxt+'</td>'+
+      '<td style="padding:7px 8px"><button class="btn btn-outline btn-sm" onclick="closeNameHist();previewRec(\''+eh(r._id)+'\')">ดูผล</button></td>'+
+    '</tr>';
+  }).join('');
+  document.getElementById('namehist-body').innerHTML=
+    '<div style="background:#fff5f5;border:1px solid #f0c0c0;border-radius:8px;padding:10px 12px;font-size:13.5px;color:#c0392b;font-weight:700;margin-bottom:12px">⚠ พบคนไข้ชื่อ "'+eh(name)+'" มีประวัติ '+matches.length+' ครั้งในระบบ — ตรวจสอบว่าเป็นคนเดียวกันหรือไม่ก่อนบันทึก</div>'+
+    '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">'+
+    '<thead><tr style="background:#f0f4f8"><th style="padding:7px 8px;text-align:left">CYTO</th><th style="padding:7px 8px;text-align:left">วันที่ตรวจ</th><th style="padding:7px 8px;text-align:left">ประเภท</th><th style="padding:7px 8px;text-align:left">ผล</th><th></th></tr></thead>'+
+    '<tbody>'+rows+'</tbody></table></div>';
+  document.getElementById('mo-namehist').classList.add('open');
+}
+function closeNameHist(){ document.getElementById('mo-namehist').classList.remove('open'); }
 // ─── STAFF ────────────────────────────────────────
 function fillDefaultStaff(){
   ['rn','rt','rl','an','at','al'].forEach(function(k){var el=document.getElementById('f-'+k);if(el)el.value=CFG[k]||''});
@@ -1975,9 +2012,16 @@ async function saveAndPrint(){
   }
   d._id=genId(); d.id=Date.now(); d.savedAt=new Date().toISOString();
   REC.unshift(d); saveLocal(); updateNextNo();
+  var _savedName=(d.name||'').trim();
   toast('บันทึก "'+d.name+'" (No.'+d.cyto+') สำเร็จ — กำลังซิงค์และพิมพ์...');
   pushToJb();
   setTimeout(function(){printDoc(d)},350);
+  clearForm();
+  // ไปหน้าประวัติ พร้อมกรองด้วยชื่อคนไข้ที่เพิ่งบันทึก
+  showPage('records');
+  var _rq=document.getElementById('rec-q');
+  if(_rq){ _rq.value=_savedName; }
+  renderRec();
 }
 
 // ─── CLEAR FORM ───────────────────────────────────
@@ -1988,6 +2032,7 @@ function clearForm(){
   var _sl=document.getElementById('btn-save-label'); if(_sl) _sl.textContent='บันทึก & พิมพ์ PDF';
   ['f-name','f-age','f-phone','f-price','f-cyto','f-rmk'].forEach(function(id){var el=document.getElementById(id);if(el)el.value=''});
   document.getElementById('f-clinic').value='';
+  document.getElementById('f-cyto').value=getNextNo(); // เลข CYTO อัตโนมัติ (แก้ไขได้)
   var today=new Date().toISOString().split('T')[0];
   document.getElementById('f-dc').value=today; document.getElementById('f-dr').value=today;
   // ── reset checkboxes ทั้งหมด (organism, nnv, rcc, org-epi, lsil-sub, hsil-sub)
@@ -2595,6 +2640,7 @@ function showPage(p){
   document.getElementById('nb-'+p).classList.add('active');
   if(p==='records'){ var rq=document.getElementById('rec-q'); if(rq) rq.value=''; renderRec(); populateBatchNew(); } if(p==='batch'){ document.getElementById('batch-list').style.display='none'; document.getElementById('batch-empty').style.display='none'; }
   if(p==='settings') loadSettings();
+  if(p==='form' && !window._editingId){ var _fc=document.getElementById('f-cyto'); if(_fc && !_fc.value) _fc.value=getNextNo(); }
   if(p==='billing') initBillingPage();
   if(p==='stats') renderStats();
 }
