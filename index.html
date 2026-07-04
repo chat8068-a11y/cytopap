@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap" rel="stylesheet">
-<title>CytoPAP System v58 — Cervical Cytology Lab Management</title>
+<title>CytoPAP System v59 — Cervical Cytology Lab Management</title>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
 <style>
@@ -233,7 +233,7 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
         <div class="sub">Cervical Cytology<br>Lab Management</div>
       </div>
     </div>
-    <span class="ver">v58 — Bethesda 2001 / 2014 🔒</span>
+    <span class="ver">v59 — Bethesda 2001 / 2014 🔒</span>
   </div>
   <nav class="nav">
     <button class="nav-btn active" onclick="showPage('form')" id="nb-form">
@@ -2428,7 +2428,7 @@ async function batchUpdateClinic(){
   toast('แก้ไขสำเร็จ '+count+' record — "'+oldName+'" → "'+newName+'"');
 }
 function addCl(){if(!CFG.clinics)CFG.clinics=[];CFG.clinics.push({name:'',email:''});renderClinicEntries();var ins=document.querySelectorAll('#cl-ent input');if(ins.length)ins[ins.length-1].focus()}
-function removeCl(i){CFG.clinics.splice(i,1);renderClinicEntries()}
+function removeCl(i){ CFG.clinics.splice(i,1); renderClinicEntries(); saveLocal(); fillClinicSelect(); toast('ลบคลินิกแล้ว — กำลังซิงค์...','i'); pushToJb().then(function(){toast('ลบ + ซิงค์ขึ้น Cloud แล้ว ✅');}).catch(function(){toast('ลบในเครื่องแล้ว แต่ซิงค์ Cloud ไม่สำเร็จ','e',5000);}); }
 
 // ── นำเข้าคลินิกจาก PC (รายชื่อที่บันทึกไว้ใน PC) ────────────────────
 var PC_CLINICS = [
@@ -2585,8 +2585,14 @@ async function cleanClinicNames(){
 async function saveSettings(){
   ['l1','l2','nth','nen','footer'].forEach(function(k){var e=document.getElementById('s-'+k);if(e)CFG[k]=e.value.trim()});
   ['rn','rt','rl','an','at','al'].forEach(function(k){var e=document.getElementById('s-'+k);if(e)CFG[k]=e.value.trim()});
-  saveLocal(); fillClinicSelect(); fillDefaultStaff();
-  toast('บันทึกการตั้งค่าแล้ว');
+  // ตัดคลินิกที่ชื่อว่างออก
+  if(CFG.clinics&&CFG.clinics.length){
+    CFG.clinics=CFG.clinics.filter(function(c){var n=(typeof c==='object'?(c.name||''):c)||''; return n.trim()!=='';});
+  }
+  saveLocal(); fillClinicSelect(); fillDefaultStaff(); renderClinicEntries();
+  toast('บันทึกการตั้งค่า — กำลังซิงค์ขึ้น Cloud...','i');
+  try{ await pushToJb(); toast('บันทึก + ซิงค์ขึ้น Cloud เรียบร้อย ✅'); }
+  catch(e){ toast('บันทึกในเครื่องแล้ว แต่ซิงค์ Cloud ไม่สำเร็จ ลองใหม่','e',5000); }
 }
 
 
