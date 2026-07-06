@@ -2,11 +2,11 @@
 <html lang="th">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; connect-src * https://api.jsonbin.io https://cytopap-lab-default-rtdb.firebaseio.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com;">
+<meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; connect-src * https://api.jsonbin.io https://cytopap-lab-default-rtdb.firebaseio.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://api.anthropic.com;">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap" rel="stylesheet">
-<title>CytoPAP System v59 — Cervical Cytology Lab Management</title>
+<title>CytoPAP System v62 — Cervical Cytology Lab Management</title>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
 <style>
@@ -233,7 +233,7 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
         <div class="sub">Cervical Cytology<br>Lab Management</div>
       </div>
     </div>
-    <span class="ver">v59 — Bethesda 2001 / 2014 🔒</span>
+    <span class="ver">v62 — Bethesda 2001 / 2014 🔒</span>
   </div>
   <nav class="nav">
     <button class="nav-btn active" onclick="showPage('form')" id="nb-form">
@@ -286,6 +286,21 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
     <button onclick="cancelEdit()" style="background:#fff;border:1.5px solid #dd9000;color:#9a6700;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer">✕ ยกเลิกการแก้ไข</button>
   </div>
 
+  <!-- 📷 สแกนใบส่งตรวจด้วย AI -->
+  <div class="card" style="border:1.5px solid #805ad5;background:linear-gradient(135deg,#faf8ff,#f3effc)">
+    <div class="card-body" style="padding:16px 18px">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <div style="flex:1;min-width:180px">
+          <div style="font-size:15px;font-weight:800;color:#5b21b6">🤖 สแกนใบส่งตรวจด้วย AI</div>
+          <div style="font-size:12px;color:#7c6a9c;margin-top:2px">ถ่ายรูป/อัปโหลดใบส่งตรวจ → AI เติมชื่อ อายุ เบอร์ คลินิก วันที่ เลข ให้อัตโนมัติ</div>
+        </div>
+        <button type="button" onclick="document.getElementById('scan-file').click()" style="background:#805ad5;color:#fff;border:none;padding:11px 18px;border-radius:10px;font-size:14px;font-weight:800;cursor:pointer;white-space:nowrap">📷 ถ่าย / อัปโหลด</button>
+        <input type="file" id="scan-file" accept="image/*" style="display:none" onchange="scanReferral(this)">
+      </div>
+      <div id="scan-status" style="display:none;margin-top:12px;font-size:13px;font-weight:600;color:#5b21b6;background:#fff;border-radius:8px;padding:10px 12px"></div>
+    </div>
+  </div>
+
   <!-- ①  ข้อมูลผู้ป่วย -->
   <div class="card">
     <div class="card-head">
@@ -294,9 +309,10 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
     </div>
     <div class="card-body">
       <div class="grid g3" style="margin-bottom:14px">
-        <div class="field span2">
+        <div class="field span2" style="position:relative">
           <label>ชื่อ-สกุล (คำนำหน้า ชื่อ นามสกุล)</label>
-          <input id="f-name" type="text" placeholder="คุณ ภัสรา คงทอง" onblur="checkNameHistory(this.value)">
+          <input id="f-name" type="text" placeholder="คุณ ภัสรา คงทอง" autocomplete="off" oninput="nameAutocomplete(this.value)" onblur="setTimeout(closeNameAC,180)">
+          <div id="name-ac" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:60;background:#fff;border:1.5px solid #1a3a6e;border-top:none;border-radius:0 0 10px 10px;max-height:250px;overflow-y:auto;box-shadow:0 8px 22px rgba(26,58,110,.18)"></div>
         </div>
         <div class="field">
           <label>อายุ (ปี)</label>
@@ -374,6 +390,7 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
       ผลการตรวจเซลล์วิทยา (Cytology)
     </div>
     <div class="card-body">
+      <button type="button" onclick="quickNormal()" style="width:100%;background:#e6f7ee;color:#1a7a3c;border:1.5px solid #1a7a3c;border-radius:10px;padding:11px;font-size:14.5px;font-weight:800;cursor:pointer;margin-bottom:16px">✓ ตั้งผลปกติทั้งหมด (Negative + HPV Nondetected)</button>
       <div class="grid g2" style="margin-bottom:14px">
         <div class="field">
           <label>Specimen Adequacy</label>
@@ -1032,6 +1049,33 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
     </div>
   </div>
 
+  <div class="card" style="border:1.5px solid #805ad5">
+    <div class="card-head" style="color:#5b21b6">🤖 สแกนใบส่งตรวจด้วย AI (ตั้งค่า)</div>
+    <div class="card-body">
+      <div class="hint" style="margin-bottom:12px">เลือกวิธีเชื่อม AI แล้วใส่ค่าให้ครบ — ปุ่ม "📷 ถ่าย/อัปโหลด" ในหน้าบันทึกผลจะทำงานทันที</div>
+      <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:14px">
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:14px"><input type="radio" name="ai-method" value="direct" onchange="toggleAiMethod()"> A — API Key ตรง (เร็ว)</label>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:14px"><input type="radio" name="ai-method" value="proxy" onchange="toggleAiMethod()"> B — Proxy (ปลอดภัยกว่า) ⭐</label>
+      </div>
+      <div id="ai-direct-box" style="display:none">
+        <label style="font-size:13px;font-weight:700;color:#5b21b6">Anthropic API Key</label>
+        <input id="s-aikey" type="password" placeholder="sk-ant-..." style="font-size:13px;letter-spacing:1px">
+        <div class="hint">จาก console.anthropic.com → API Keys · ⚠️ key จะอยู่ในโค้ดหน้าเว็บ (คนอื่นอาจเห็น)</div>
+      </div>
+      <div id="ai-proxy-box" style="display:none">
+        <label style="font-size:13px;font-weight:700;color:#5b21b6">Proxy URL (Cloudflare Worker)</label>
+        <input id="s-aiproxy" type="text" placeholder="https://xxxx.workers.dev" style="font-size:13px">
+        <div class="hint">URL ของ Worker ที่เก็บ key ไว้ฝั่งเซิร์ฟเวอร์ (key ไม่โผล่ในเว็บ)</div>
+      </div>
+      <div style="margin-top:10px">
+        <label style="font-size:13px;font-weight:700;color:#5b21b6">AI Model</label>
+        <input id="s-aimodel" type="text" placeholder="claude-3-5-sonnet-20241022" style="font-size:13px">
+        <div class="hint">รุ่นที่อ่านภาพได้ เช่น claude-3-5-sonnet-20241022 (เว้นว่าง = ใช้ค่าเริ่มต้น)</div>
+      </div>
+      <button class="btn btn-primary" style="margin-top:12px;background:#805ad5" onclick="saveSettings()">💾 บันทึกการตั้งค่า AI</button>
+    </div>
+  </div>
+
   <div class="card">
     <div class="card-head">ข้อมูลหัวรายงาน (ห้องปฏิบัติการ)</div>
     <div class="card-body">
@@ -1536,6 +1580,114 @@ function checkNameHistory(name){
   document.getElementById('mo-namehist').classList.add('open');
 }
 function closeNameHist(){ document.getElementById('mo-namehist').classList.remove('open'); }
+
+// ═══ AI สแกนใบส่งตรวจ ═══════════════════════════════
+// ย่อรูปให้ ≤1568px แล้วแปลงเป็น base64 (เร็ว+ประหยัด)
+function scanFileToB64(file){
+  return new Promise(function(res,rej){
+    var img=new Image(); var url=URL.createObjectURL(file);
+    img.onload=function(){
+      var max=1568, w=img.width, h=img.height;
+      if(w>max||h>max){ if(w>h){ h=Math.round(h*max/w); w=max; } else { w=Math.round(w*max/h); h=max; } }
+      var c=document.createElement('canvas'); c.width=w; c.height=h;
+      c.getContext('2d').drawImage(img,0,0,w,h);
+      URL.revokeObjectURL(url);
+      res({data:c.toDataURL('image/jpeg',0.85).split(',')[1], media:'image/jpeg'});
+    };
+    img.onerror=function(){ URL.revokeObjectURL(url); rej(new Error('โหลดรูปไม่ได้')); };
+    img.src=url;
+  });
+}
+function aiScanPrompt(){
+  return 'คุณคือผู้ช่วยอ่านใบส่งตรวจทางการแพทย์ (Cervical Cytology / Pap Smear) ที่เขียนด้วยลายมือภาษาไทย '+
+    'อ่านภาพแล้วดึงข้อมูล ตอบกลับเป็น JSON เท่านั้น ห้ามมีข้อความอื่นนอก JSON:\n'+
+    '{"number":"เลขที่เขียนด้วยปากกาตัวใหญ่ (Cytologic No.) เอาเฉพาะตัวเลข",'+
+    '"name":"ชื่อ-นามสกุลผู้ป่วย รวมคำนำหน้า",'+
+    '"age":"อายุ เฉพาะตัวเลข ถ้ามีขีดฆ่าให้ใช้เลขที่แก้ล่าสุด",'+
+    '"phone":"เบอร์โทรศัพท์ ใส่ขีดตามจริง",'+
+    '"clinic":"ชื่อคลินิกหรือแพทย์ผู้ส่งตรวจ",'+
+    '"dc":"วันที่เก็บสิ่งส่งตรวจ รูปแบบ YYYY-MM-DD โดยแปลงปี พ.ศ. เป็น ค.ศ. (ลบ 543); ถ้าปีเขียน 2 หลักเช่น 69 หมายถึง พ.ศ.2569 = ค.ศ.2026",'+
+    '"conf":{"number":0.0-1.0,"name":0.0-1.0,"age":0.0-1.0,"phone":0.0-1.0,"clinic":0.0-1.0,"dc":0.0-1.0}}\n'+
+    'ช่องไหนอ่านไม่ได้ให้ค่าว่าง "" และ conf ต่ำ ระดับความมั่นใจ conf เป็นทศนิยม 0 ถึง 1';
+}
+async function aiExtractReferral(b64,media){
+  var model=CFG.aiModel||'claude-3-5-sonnet-20241022';
+  var prompt=aiScanPrompt();
+  if(CFG.aiMethod==='proxy'){
+    if(!CFG.aiProxy) throw new Error('ยังไม่ได้ตั้งค่า Proxy URL');
+    var pr=await fetch(CFG.aiProxy,{method:'POST',headers:{'content-type':'application/json'},
+      body:JSON.stringify({model:model,image:b64,media_type:media,prompt:prompt})});
+    if(!pr.ok) throw new Error('Proxy '+pr.status+': '+(await pr.text()).slice(0,150));
+    return aiText(await pr.json());
+  }
+  if(!CFG.aiKey) throw new Error('ยังไม่ได้ใส่ API Key');
+  var r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',
+    headers:{'x-api-key':CFG.aiKey,'anthropic-version':'2023-06-01','content-type':'application/json','anthropic-dangerous-direct-browser-access':'true'},
+    body:JSON.stringify({model:model,max_tokens:1024,messages:[{role:'user',content:[
+      {type:'image',source:{type:'base64',media_type:media,data:b64}},
+      {type:'text',text:prompt}]}]})});
+  if(!r.ok) throw new Error('API '+r.status+': '+(await r.text()).slice(0,150));
+  return aiText(await r.json());
+}
+function aiText(data){
+  if(data&&data.content&&data.content.length) return data.content.filter(function(b){return b.type==='text';}).map(function(b){return b.text;}).join('');
+  if(data&&data.text) return data.text;
+  if(typeof data==='string') return data;
+  return JSON.stringify(data);
+}
+function parseAIJson(text){
+  var t=(text||'').replace(/```json/gi,'').replace(/```/g,'').trim();
+  var s=t.indexOf('{'), e=t.lastIndexOf('}');
+  if(s>=0&&e>s) t=t.substring(s,e+1);
+  return JSON.parse(t);
+}
+function matchClinicSelect(aiName){
+  var sel=document.getElementById('f-clinic'); if(!sel||!aiName) return;
+  var a=aiName.replace(/\s+/g,'');
+  for(var i=0;i<sel.options.length;i++){
+    var opt=(sel.options[i].value||'').replace(/\s+/g,'');
+    if(opt && (opt.indexOf(a)>=0||a.indexOf(opt)>=0)){ sel.value=sel.options[i].value; return true; }
+  }
+  var key=aiName.replace(/หมอ|พญ\.?|นพ\.?|คุณ|\s/g,'');
+  if(key.length>=3){ for(var j=0;j<sel.options.length;j++){ if((sel.options[j].value||'').replace(/\s+/g,'').indexOf(key)>=0){ sel.value=sel.options[j].value; return true; } } }
+  return false;
+}
+function fillFromScan(o){
+  var conf=o.conf||{};
+  function setF(id,val){ var e=document.getElementById(id); if(e&&val!=null&&val!=='') e.value=val; }
+  if(o.number) setF('f-cyto', String(o.number).replace(/[^0-9]/g,''));
+  if(o.name) setF('f-name', o.name);
+  if(o.age) setF('f-age', String(o.age).replace(/[^0-9]/g,''));
+  if(o.phone) setF('f-phone', o.phone);
+  if(o.dc) setF('f-dc', o.dc);
+  if(o.clinic) matchClinicSelect(o.clinic);
+  // ไฮไลต์ช่องที่ AI ไม่มั่นใจ (<0.7)
+  [['f-cyto','number'],['f-name','name'],['f-age','age'],['f-phone','phone'],['f-dc','dc']].forEach(function(p){
+    var e=document.getElementById(p[0]); if(!e) return;
+    if((conf[p[1]]==null?1:conf[p[1]])<0.7){ e.style.background='#fff8e6'; e.style.borderColor='#dd9000'; e.title='⚠ AI ไม่มั่นใจ กรุณาตรวจสอบ'; }
+    else { e.title=''; }
+  });
+  if(o.name) checkNameHistory(o.name);
+}
+async function scanReferral(input){
+  var file=input.files&&input.files[0]; if(!file) return;
+  if(CFG.aiMethod==='proxy'){ if(!CFG.aiProxy){ toast('ยังไม่ได้ตั้งค่า Proxy URL — ไปที่ ตั้งค่าระบบ → สแกน AI','e',6000); input.value=''; return; } }
+  else if(!CFG.aiKey){ toast('ยังไม่ได้ตั้งค่า AI — ไปที่ ตั้งค่าระบบ → สแกน AI','e',6000); input.value=''; return; }
+  var st=document.getElementById('scan-status'); st.style.display='block';
+  st.textContent='🤖 กำลังอ่านใบส่งตรวจด้วย AI... (ประมาณ 10-20 วินาที)';
+  try{
+    var r=await scanFileToB64(file);
+    var text=await aiExtractReferral(r.data,r.media);
+    var obj=parseAIJson(text);
+    fillFromScan(obj);
+    st.textContent='✅ อ่านเสร็จแล้ว — กรุณาตรวจสอบข้อมูล (ช่องพื้นเหลือง = AI ไม่มั่นใจ ควรเช็ก)';
+    toast('AI อ่านเสร็จ — ตรวจชื่อ/อายุก่อนบันทึกนะครับ','i',5000);
+  }catch(e){
+    st.textContent='❌ อ่านไม่สำเร็จ: '+(e.message||e);
+    toast('สแกนไม่สำเร็จ: '+(e.message||e),'e',7000);
+  }
+  input.value='';
+}
 // ─── STAFF ────────────────────────────────────────
 function fillDefaultStaff(){
   ['rn','rt','rl','an','at','al'].forEach(function(k){var el=document.getElementById('f-'+k);if(el)el.value=CFG[k]||''});
@@ -2012,17 +2164,69 @@ async function saveAndPrint(){
   }
   d._id=genId(); d.id=Date.now(); d.savedAt=new Date().toISOString();
   REC.unshift(d); saveLocal(); updateNextNo();
-  var _savedName=(d.name||'').trim();
-  toast('บันทึก "'+d.name+'" (No.'+d.cyto+') สำเร็จ — กำลังซิงค์และพิมพ์...');
+  toast('บันทึก "'+d.name+'" (No.'+d.cyto+') สำเร็จ — พร้อมกรอกรายต่อไป ✍️');
   pushToJb();
   setTimeout(function(){printDoc(d)},350);
   clearForm();
-  // ไปหน้าประวัติ พร้อมกรองด้วยชื่อคนไข้ที่เพิ่งบันทึก
-  showPage('records');
-  var _rq=document.getElementById('rec-q');
-  if(_rq){ _rq.value=_savedName; }
-  renderRec();
+  // เคอร์เซอร์เด้งไปรอที่ช่องชื่อ-สกุล พร้อมกรอกรายต่อไปทันที
+  window.scrollTo(0,0);
+  var _fn=document.getElementById('f-name');
+  if(_fn){ _fn.focus(); }
+  // โฟกัสซ้ำหลังหน้าต่างพิมพ์เปิด (กันโฟกัสหลุด)
+  setTimeout(function(){ var f=document.getElementById('f-name'); if(f && document.getElementById('page-form').classList.contains('active')) f.focus(); }, 900);
 }
+
+// ─── ตั้งค่า radio + pill class + panel ที่เกี่ยวข้อง ───
+function setPillRadio(name,value){
+  var found=false;
+  document.querySelectorAll('input[name="'+name+'"]').forEach(function(r){
+    var on=(r.value===value); r.checked=on;
+    if(r.parentElement) r.parentElement.classList.toggle('sel',on);
+    if(on) found=true;
+  });
+  if(found && typeof onPillChange==='function') onPillChange(name,value);
+}
+// ปุ่มลัด: ตั้งผลปกติทั้งหมด (Negative + Satisfactory + HPV Nondetected)
+function quickNormal(){
+  setPillRadio('adq','Satisfactory');
+  setPillRadio('tz','Presence of endocervical/Transformation zone component.');
+  setPillRadio('cat','Negative for Intraepithelial Lesion or Malignancy');
+  setPillRadio('hr','Nondetected');
+  ['pg-org','pg-org-epi','pg-nnv','pg-rcc'].forEach(function(gid){var g=document.getElementById(gid);if(g)g.querySelectorAll('input[type=checkbox]').forEach(function(cb){cb.checked=false;if(cb.parentElement)cb.parentElement.classList.remove('sel');});});
+  toast('ตั้งผลปกติแล้ว ✓ Negative + HPV Nondetected','i',3000);
+}
+// ─── Autocomplete ชื่อคนไข้จากประวัติ ───
+function nameAutocomplete(q){
+  q=(q||'').trim().toLowerCase();
+  var box=document.getElementById('name-ac'); if(!box) return;
+  if(q.length<2){ box.style.display='none'; return; }
+  var seen={}, list=[];
+  REC.forEach(function(r){
+    var nm=(r.name||'').trim(); if(!nm||nm.toLowerCase().indexOf(q)<0) return;
+    if(seen[nm]) return; seen[nm]=true; list.push(r);
+  });
+  if(!list.length){ box.style.display='none'; return; }
+  list=list.slice(0,8);
+  box.innerHTML=list.map(function(r){
+    var visits=REC.filter(function(x){return (x.name||'').trim()===(r.name||'').trim();}).length;
+    return '<div onmousedown="pickPatient('+JSON.stringify(r._id)+')" style="padding:9px 12px;cursor:pointer;border-bottom:1px solid #eef2f8">'+
+      '<div style="font-weight:700;color:#1a3a6e">'+eh(r.name)+'</div>'+
+      '<div style="font-size:11.5px;color:#6b7a99">อายุ '+eh(r.age||'-')+' · '+eh(r.clinic||'-')+' · เคยตรวจ '+visits+' ครั้ง</div>'+
+    '</div>';
+  }).join('');
+  box.style.display='block';
+}
+function pickPatient(id){
+  var r=findById(id); if(!r) return;
+  var setV=function(fid,v){var e=document.getElementById(fid);if(e)e.value=(v==null?'':v);};
+  setV('f-name',r.name); setV('f-age',r.age); setV('f-phone',r.phone);
+  var cl=document.getElementById('f-clinic');
+  if(cl&&r.clinic){ cl.value=r.clinic; if(cl.value!==r.clinic && typeof matchClinicSelect==='function') matchClinicSelect(r.clinic); }
+  closeNameAC();
+  toast('เติมข้อมูลคนไข้เดิม: '+r.name,'i',2500);
+  checkNameHistory(r.name);
+}
+function closeNameAC(){ var b=document.getElementById('name-ac'); if(b) b.style.display='none'; }
 
 // ─── CLEAR FORM ───────────────────────────────────
 function clearForm(){
@@ -2056,6 +2260,11 @@ function clearForm(){
   var ls=document.getElementById('sec-lsil-sub'); if(ls) ls.style.display='none';
   var hs=document.getElementById('sec-hsil-sub'); if(hs) hs.style.display='none';
   var ep=document.getElementById('sec-epi'); if(ep) ep.style.display='none';
+  // reset ผลตรวจกลับค่าปกติ (Negative/Satisfactory/Nondetected) กันค่าค้างจากเคสก่อน
+  setPillRadio('adq','Satisfactory');
+  setPillRadio('tz','Presence of endocervical/Transformation zone component.');
+  setPillRadio('cat','Negative for Intraepithelial Lesion or Malignancy');
+  setPillRadio('hr','Nondetected');
   fillDefaultStaff(); toast('ล้างฟอร์มแล้ว');
 }
 
@@ -2383,6 +2592,13 @@ function loadSettings(){
   ['l1','l2','nth','nen','footer'].forEach(function(k){var e=document.getElementById('s-'+k);if(e)e.value=CFG[k]||''});
   ['rn','rt','rl','an','at','al'].forEach(function(k){var e=document.getElementById('s-'+k);if(e)e.value=CFG[k]||''});
   var jbEl=document.getElementById('jb-key'); if(jbEl) jbEl.value=CFG.jbKey||'';
+  // AI config
+  var am=CFG.aiMethod||'direct';
+  document.querySelectorAll('input[name="ai-method"]').forEach(function(r){ r.checked=(r.value===am); });
+  var ak=document.getElementById('s-aikey'); if(ak) ak.value=CFG.aiKey||'';
+  var ap=document.getElementById('s-aiproxy'); if(ap) ap.value=CFG.aiProxy||'';
+  var amo=document.getElementById('s-aimodel'); if(amo) amo.value=CFG.aiModel||'';
+  toggleAiMethod();
   renderClinicEntries();
 }
 function renderClinicEntries(){
@@ -2585,6 +2801,11 @@ async function cleanClinicNames(){
 async function saveSettings(){
   ['l1','l2','nth','nen','footer'].forEach(function(k){var e=document.getElementById('s-'+k);if(e)CFG[k]=e.value.trim()});
   ['rn','rt','rl','an','at','al'].forEach(function(k){var e=document.getElementById('s-'+k);if(e)CFG[k]=e.value.trim()});
+  // AI config
+  var amEl=document.querySelector('input[name="ai-method"]:checked'); if(amEl) CFG.aiMethod=amEl.value;
+  var ak=document.getElementById('s-aikey'); if(ak) CFG.aiKey=ak.value.trim();
+  var ap=document.getElementById('s-aiproxy'); if(ap) CFG.aiProxy=ap.value.trim();
+  var amo=document.getElementById('s-aimodel'); if(amo) CFG.aiModel=amo.value.trim();
   // ตัดคลินิกที่ชื่อว่างออก
   if(CFG.clinics&&CFG.clinics.length){
     CFG.clinics=CFG.clinics.filter(function(c){var n=(typeof c==='object'?(c.name||''):c)||''; return n.trim()!=='';});
@@ -2593,6 +2814,12 @@ async function saveSettings(){
   toast('บันทึกการตั้งค่า — กำลังซิงค์ขึ้น Cloud...','i');
   try{ await pushToJb(); toast('บันทึก + ซิงค์ขึ้น Cloud เรียบร้อย ✅'); }
   catch(e){ toast('บันทึกในเครื่องแล้ว แต่ซิงค์ Cloud ไม่สำเร็จ ลองใหม่','e',5000); }
+}
+function toggleAiMethod(){
+  var m=(document.querySelector('input[name="ai-method"]:checked')||{}).value||'direct';
+  var db=document.getElementById('ai-direct-box'), pb=document.getElementById('ai-proxy-box');
+  if(db) db.style.display=(m==='direct')?'block':'none';
+  if(pb) pb.style.display=(m==='proxy')?'block':'none';
 }
 
 
@@ -3308,6 +3535,17 @@ function sendLineClinic(r){
 }
 
 // ─── START ────────────────────────────────────────
+// Enter = ไปช่องถัดไป (กรอกด้วยคีย์บอร์ดลื่นไม่ต้องใช้เมาส์)
+document.addEventListener('keydown',function(e){
+  if(e.key!=='Enter') return;
+  var t=e.target; if(!t) return;
+  var fp=document.getElementById('page-form'); if(!fp||!fp.classList.contains('active')) return;
+  var order=['f-name','f-age','f-dc','f-dr','f-phone','f-cyto','f-clinic'];
+  var i=order.indexOf(t.id); if(i<0) return;
+  if(t.id==='f-name'){ var ac=document.getElementById('name-ac'); if(ac&&ac.style.display==='block') return; }
+  e.preventDefault();
+  if(i<order.length-1){ var nx=document.getElementById(order[i+1]); if(nx) nx.focus(); }
+},true);
 loadData();
 fillClinicSelect();
 fillDefaultStaff();
