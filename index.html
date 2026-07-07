@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap" rel="stylesheet">
-<title>CytoPAP System v62 — Cervical Cytology Lab Management</title>
+<title>CytoPAP System v64 — Cervical Cytology Lab Management</title>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
 <style>
@@ -233,7 +233,7 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
         <div class="sub">Cervical Cytology<br>Lab Management</div>
       </div>
     </div>
-    <span class="ver">v62 — Bethesda 2001 / 2014 🔒</span>
+    <span class="ver">v64 — Bethesda 2001 / 2014 🔒</span>
   </div>
   <nav class="nav">
     <button class="nav-btn active" onclick="showPage('form')" id="nb-form">
@@ -2129,7 +2129,7 @@ function printDoc(d){
 // ─── SAVE & PRINT ─────────────────────────────────
 async function saveAndPrint(){
   var d=collectForm();
-  if(!d.name){toast('กรุณากรอกชื่อ-สกุลผู้ป่วย','e');return}
+  if(!d.name || d.name.trim()==='คุณ' || d.name.replace(/^คุณ\s*/,'').trim().length<1){toast('กรุณากรอกชื่อ-สกุลผู้ป่วย','e');return}
   if(!d.cyto){toast('กรุณากรอก CYTO LOHY Number','e');return}
   // ── โหมดแก้ไข ──
   if(window._editingId){
@@ -2171,9 +2171,9 @@ async function saveAndPrint(){
   // เคอร์เซอร์เด้งไปรอที่ช่องชื่อ-สกุล พร้อมกรอกรายต่อไปทันที
   window.scrollTo(0,0);
   var _fn=document.getElementById('f-name');
-  if(_fn){ _fn.focus(); }
+  if(_fn){ _fn.focus(); var _L=_fn.value.length; if(_fn.setSelectionRange) _fn.setSelectionRange(_L,_L); }
   // โฟกัสซ้ำหลังหน้าต่างพิมพ์เปิด (กันโฟกัสหลุด)
-  setTimeout(function(){ var f=document.getElementById('f-name'); if(f && document.getElementById('page-form').classList.contains('active')) f.focus(); }, 900);
+  setTimeout(function(){ var f=document.getElementById('f-name'); if(f && document.getElementById('page-form').classList.contains('active')){ f.focus(); var L=f.value.length; if(f.setSelectionRange) f.setSelectionRange(L,L); } }, 900);
 }
 
 // ─── ตั้งค่า radio + pill class + panel ที่เกี่ยวข้อง ───
@@ -2237,8 +2237,13 @@ function clearForm(){
   ['f-name','f-age','f-phone','f-price','f-cyto','f-rmk'].forEach(function(id){var el=document.getElementById(id);if(el)el.value=''});
   document.getElementById('f-clinic').value='';
   document.getElementById('f-cyto').value=getNextNo(); // เลข CYTO อัตโนมัติ (แก้ไขได้)
+  // ขึ้น "คุณ " นำหน้าช่องชื่อทุกราย (พิมพ์ต่อได้เลย)
+  var _nm=document.getElementById('f-name'); if(_nm) _nm.value='คุณ ';
+  // คงวันที่จากรายก่อนหน้า (ล็อตเดียวกันวันเดียวกัน) — ถ้าว่าง (รายแรก) ใช้วันนี้
   var today=new Date().toISOString().split('T')[0];
-  document.getElementById('f-dc').value=today; document.getElementById('f-dr').value=today;
+  var _dc=document.getElementById('f-dc'), _dr=document.getElementById('f-dr');
+  if(_dc && !_dc.value) _dc.value=today;
+  if(_dr && !_dr.value) _dr.value=today;
   // ── reset checkboxes ทั้งหมด (organism, nnv, rcc, org-epi, lsil-sub, hsil-sub)
   var cbGroups=['pg-org','pg-org-epi','pg-nnv','pg-rcc'];
   cbGroups.forEach(function(gid){
@@ -2873,7 +2878,7 @@ function showPage(p){
   document.getElementById('nb-'+p).classList.add('active');
   if(p==='records'){ var rq=document.getElementById('rec-q'); if(rq) rq.value=''; renderRec(); populateBatchNew(); } if(p==='batch'){ document.getElementById('batch-list').style.display='none'; document.getElementById('batch-empty').style.display='none'; }
   if(p==='settings') loadSettings();
-  if(p==='form' && !window._editingId){ var _fc=document.getElementById('f-cyto'); if(_fc && !_fc.value) _fc.value=getNextNo(); }
+  if(p==='form' && !window._editingId){ var _fc=document.getElementById('f-cyto'); if(_fc && !_fc.value) _fc.value=getNextNo(); var _fnm=document.getElementById('f-name'); if(_fnm && !_fnm.value.trim()) _fnm.value='คุณ '; }
   if(p==='billing') initBillingPage();
   if(p==='stats') renderStats();
 }
@@ -3627,29 +3632,39 @@ if(!AUTH_ENABLED){
   hideLogin();
   setTimeout(bootCloud, 300);
 } else {
-  firebase.initializeApp(firebaseConfig);
-  firebase.auth().onAuthStateChanged(function(user){
-    if(user){
-      _isAnon = user.isAnonymous;
-      user.getIdToken().then(function(t){
-        _idToken=t; hideLogin();
-        if(!_isAnon) addLogoutBtn();
-        bootCloud();
-        setInterval(function(){
-          var u=firebase.auth().currentUser;
-          if(u) u.getIdToken(true).then(function(nt){_idToken=nt;}).catch(function(){});
-        }, 50*60*1000);
-      });
-    } else {
-      if(_urlClinic){
-        firebase.auth().signInAnonymously().catch(function(e){
-          hideLogin(); toast('โหมดคลินิก: '+mapAuthErr(e),'e',6000); bootCloud();
+  (function bootAuth(tries){
+    if(typeof firebase==='undefined' || !firebase.initializeApp){
+      // Firebase SDK ยังโหลดไม่เสร็จ — ลองใหม่ (สูงสุด ~5 วินาที)
+      if(tries>0){ setTimeout(function(){ bootAuth(tries-1); }, 800); return; }
+      // โหลดไม่สำเร็จจริงๆ (เน็ตมีปัญหา/ถูกบล็อก) — แจ้งเตือน ไม่ให้ค้าง
+      var _e=document.getElementById('lg-err'); if(_e) _e.textContent='โหลดระบบล็อกอินไม่สำเร็จ — ตรวจอินเทอร์เน็ตแล้วรีเฟรช (Ctrl+Shift+R)';
+      var _o=document.getElementById('login-overlay'); if(_o) _o.style.display='flex';
+      return;
+    }
+    if(!firebase.apps || !firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    firebase.auth().onAuthStateChanged(function(user){
+      if(user){
+        _isAnon = user.isAnonymous;
+        user.getIdToken().then(function(t){
+          _idToken=t; hideLogin();
+          if(!_isAnon) addLogoutBtn();
+          bootCloud();
+          setInterval(function(){
+            var u=firebase.auth().currentUser;
+            if(u) u.getIdToken(true).then(function(nt){_idToken=nt;}).catch(function(){});
+          }, 50*60*1000);
         });
       } else {
-        var o=document.getElementById('login-overlay'); if(o) o.style.display='flex';
+        if(_urlClinic){
+          firebase.auth().signInAnonymously().catch(function(e){
+            hideLogin(); toast('โหมดคลินิก: '+mapAuthErr(e),'e',6000); bootCloud();
+          });
+        } else {
+          var o=document.getElementById('login-overlay'); if(o) o.style.display='flex';
+        }
       }
-    }
-  });
+    });
+  })(6);
 }
 </script>
 </body>
