@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap" rel="stylesheet">
-<title>CytoPAP System v64 — Cervical Cytology Lab Management</title>
+<title>CytoPAP System v65 — Cervical Cytology Lab Management</title>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
 <style>
@@ -233,7 +233,7 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
         <div class="sub">Cervical Cytology<br>Lab Management</div>
       </div>
     </div>
-    <span class="ver">v64 — Bethesda 2001 / 2014 🔒</span>
+    <span class="ver">v65 — Bethesda 2001 / 2014 🔒</span>
   </div>
   <nav class="nav">
     <button class="nav-btn active" onclick="showPage('form')" id="nb-form">
@@ -2235,7 +2235,7 @@ function clearForm(){
   var _eb=document.getElementById('edit-banner'); if(_eb) _eb.style.display='none';
   var _sl=document.getElementById('btn-save-label'); if(_sl) _sl.textContent='บันทึก & พิมพ์ PDF';
   ['f-name','f-age','f-phone','f-price','f-cyto','f-rmk'].forEach(function(id){var el=document.getElementById(id);if(el)el.value=''});
-  document.getElementById('f-clinic').value='';
+  // คงคลินิก/แพทย์เดิมจากรายก่อนหน้า (ล็อตเดียวกันมักคลินิกเดียวกัน) — ไม่รีเซ็ต f-clinic
   document.getElementById('f-cyto').value=getNextNo(); // เลข CYTO อัตโนมัติ (แก้ไขได้)
   // ขึ้น "คุณ " นำหน้าช่องชื่อทุกราย (พิมพ์ต่อได้เลย)
   var _nm=document.getElementById('f-name'); if(_nm) _nm.value='คุณ ';
@@ -2270,6 +2270,9 @@ function clearForm(){
   setPillRadio('tz','Presence of endocervical/Transformation zone component.');
   setPillRadio('cat','Negative for Intraepithelial Lesion or Malignancy');
   setPillRadio('hr','Nondetected');
+  // เติมราคาอัตโนมัติตามประเภทตรวจ+คลินิกที่ค้างไว้ (คลินิกเดิม)
+  var _et=(document.querySelector('input[name="examType"]:checked')||{}).value;
+  if(_et && typeof onExamTypeChange==='function') onExamTypeChange(_et);
   fillDefaultStaff(); toast('ล้างฟอร์มแล้ว');
 }
 
