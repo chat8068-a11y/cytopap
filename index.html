@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap" rel="stylesheet">
-<title>CytoPAP System v70 — Cervical Cytology Lab Management</title>
+<title>CytoPAP System v71 — Cervical Cytology Lab Management</title>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
 <style>
@@ -242,7 +242,7 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
         <div class="sub">Cervical Cytology<br>Lab Management</div>
       </div>
     </div>
-    <span class="ver" id="ver-badge">v70 — Bethesda 2001 / 2014 🔒</span>
+    <span class="ver" id="ver-badge">v71 — Bethesda 2001 / 2014 🔒</span>
   </div>
   <nav class="nav">
     <button class="nav-btn active" onclick="showPage('form')" id="nb-form">
@@ -277,7 +277,7 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
 <div class="sb-foot">
     <div>ThinPrep PAP / SurePath</div>
     <div>HPV DNA Genotype Testing</div>
-    <div style="margin-top:6px;opacity:.4" id="ver-foot">v70 — CytoPAP System</div>
+    <div style="margin-top:6px;opacity:.4" id="ver-foot">v71 — CytoPAP System</div>
   </div>
 </aside>
 
@@ -981,6 +981,11 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
             <option value="9">กันยายน</option><option value="10">ตุลาคม</option>
             <option value="11">พฤศจิกายน</option><option value="12">ธันวาคม</option>
           </select>
+          <label style="font-size:12px;font-weight:700;color:#6b7a99">ถึงเดือน</label>
+          <select id="exp-month-to" style="padding:6px 10px;border:1.5px solid #d0d9ee;border-radius:8px;font-size:13px">
+            <option value="0">— เหมือนเดือนเริ่ม —</option>
+            <option value="1">มกราคม</option><option value="2">กุมภาพันธ์</option><option value="3">มีนาคม</option><option value="4">เมษายน</option><option value="5">พฤษภาคม</option><option value="6">มิถุนายน</option><option value="7">กรกฎาคม</option><option value="8">สิงหาคม</option><option value="9">กันยายน</option><option value="10">ตุลาคม</option><option value="11">พฤศจิกายน</option><option value="12">ธันวาคม</option>
+          </select>
           <label style="font-size:12px;font-weight:700;color:#6b7a99">ปี พ.ศ.</label>
           <input id="exp-year" type="number" value="2569" style="padding:6px 10px;border:1.5px solid #d0d9ee;border-radius:8px;font-size:13px;width:80px">
           <label style="font-size:12px;font-weight:700;color:#6b7a99">คลินิก</label>
@@ -1261,7 +1266,7 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
 // ══════════════════════════════════════════════════
 // CytoPAP System — JSONBin Cloud Sync Edition
 // ══════════════════════════════════════════════════
-var APP_VERSION = 'v70';   // ⬅️ แก้เลขเวอร์ชันที่นี่ที่เดียว — จุดอื่นอัปเดตตามอัตโนมัติ
+var APP_VERSION = 'v71';   // ⬅️ แก้เลขเวอร์ชันที่นี่ที่เดียว — จุดอื่นอัปเดตตามอัตโนมัติ
 document.addEventListener('DOMContentLoaded', function(){
   try{
     document.title = document.title.replace(/v\d+/, APP_VERSION);
@@ -3222,12 +3227,17 @@ function exportExcelMonth(){
   var yAD=ySel>2500?ySel-543:ySel;
   var cSel=(document.getElementById('exp-clinic').value||'').trim();
   var thM=['','มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+  // ── ช่วงเดือน จาก–ถึง (ถ้าไม่เลือก "ถึงเดือน" ใช้เดือนเริ่มอย่างเดียว) ──
+  var mToEl2=document.getElementById('exp-month-to');
+  var mTo2=mToEl2?(parseInt(mToEl2.value)||0):0;
+  var mStart=mSel, mEnd=(mTo2>0?mTo2:mSel);
+  if(mStart>0 && mEnd>0 && mEnd<mStart){ var _t2=mStart; mStart=mEnd; mEnd=_t2; }
   var filtered=REC.filter(function(r){
     var dateStr=r.dc||r.dr||''; var p=dateStr.split('-');
     if(p.length!==3) return false;
     var ry=parseInt(p[0]),rm=parseInt(p[1]);
     var matchY=ry===yAD||ry===(yAD+543);
-    var matchM=mSel===0||rm===mSel;
+    var matchM=(mStart===0) ? true : (rm>=mStart && rm<=mEnd);
     var matchC=!cSel||(r.clinic||'').trim()===cSel;
     return matchY&&matchM&&matchC;
   });
@@ -3238,7 +3248,9 @@ function exportExcelMonth(){
     if(da!==db) return da<db ? -1 : 1;
     return (parseInt(a.cyto)||0)-(parseInt(b.cyto)||0);
   });
-  var title=(mSel?thM[mSel]+' ':'')+ySel+(cSel?' — '+cSel:'');
+  var periodTxt = (mStart===0) ? ('ทุกเดือน '+ySel)
+                : (mStart===mEnd ? (thM[mStart]+' '+ySel) : (thM[mStart]+'—'+thM[mEnd]+' '+ySel));
+  var title=periodTxt+(cSel?' — '+cSel:'');
   var wsData=[['รายงานประจำ'+title],[''],
     ['CYTO No.','ชื่อ-สกุล','อายุ','คลินิก','วันที่รับ','วันที่รายงาน','ผล Pap','HPV','Genotype','ราคา (฿)']];
   filtered.forEach(function(r){
@@ -3268,7 +3280,9 @@ function exportExcelMonth(){
   var wb=XLSX.utils.book_new();
   var ws=XLSX.utils.aoa_to_sheet(wsData);
   XLSX.utils.book_append_sheet(wb,ws,'รายงาน'+ySel);
-  var fn='CytoPAP_รายงาน_'+(mSel?thM[mSel]+'_':'')+ySel+(cSel?'_'+cSel:'')+'.xlsx';
+  var fnPeriod = (mStart===0) ? String(ySel)
+               : (mStart===mEnd ? (thM[mStart]+'_'+ySel) : (thM[mStart]+'-'+thM[mEnd]+'_'+ySel));
+  var fn='CytoPAP_รายงาน_'+fnPeriod+(cSel?'_'+cSel:'')+'.xlsx';
   XLSX.writeFile(wb,fn);
   toast('Export สำเร็จ '+filtered.length+' รายการ ✅');
 }
@@ -3277,17 +3291,22 @@ function exportExcelMonth(){
 function exportInvoice(){
   if(!REC.length){toast('ยังไม่มีข้อมูล','e');return;}
   var mSel=parseInt(document.getElementById('exp-month').value)||0;
+  var mToEl=document.getElementById('exp-month-to');
+  var mTo=mToEl?(parseInt(mToEl.value)||0):0;
   var ySel=parseInt(document.getElementById('exp-year').value)||new Date().getFullYear()+543;
   var yAD=ySel>2500?ySel-543:ySel;
   var cSel=(document.getElementById('exp-clinic').value||'').trim();
   if(!cSel){toast('กรุณาเลือกคลินิกก่อนครับ','e');return;}
   var thM=['','มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+  // ── ช่วงเดือน: ถ้าไม่เลือก "ถึงเดือน" ให้ใช้เดือนเริ่มอย่างเดียว ──
+  var mStart=mSel, mEnd=(mTo>0?mTo:mSel);
+  if(mStart>0 && mEnd>0 && mEnd<mStart){ var _t=mStart; mStart=mEnd; mEnd=_t; }  // เลือกสลับก็ไม่พัง
   var filtered=REC.filter(function(r){
     var dateStr=r.dc||r.dr||''; var p=dateStr.split('-');
     if(p.length!==3) return false;
     var ry=parseInt(p[0]),rm=parseInt(p[1]);
     var matchY=ry===yAD||ry===(yAD+543);
-    var matchM=mSel===0||rm===mSel;
+    var matchM=(mStart===0) ? true : (rm>=mStart && rm<=mEnd);
     return matchY&&matchM&&(r.clinic||'').trim()===cSel;
   });
   if(!filtered.length){toast('ไม่พบข้อมูล — '+monthsHint(cSel,yAD),'e',7000);return;}
@@ -3317,7 +3336,10 @@ function exportInvoice(){
       '<td style="padding:6px 10px;text-align:right;font-weight:700">'+t.sum.toLocaleString()+' ฿</td>'+
     '</tr>';
   }).join('');
-  var periodLabel=(mSel?thM[mSel]+' ':'')+ySel;
+  var periodLabel = (mStart===0)
+      ? ('ทุกเดือน '+ySel)
+      : (mStart===mEnd ? (thM[mStart]+' '+ySel)
+                       : (thM[mStart]+' — '+thM[mEnd]+' '+ySel));
   var rows=filtered.map(function(r,i){
     return '<tr style="border-bottom:1px solid #eee">'+
       '<td style="padding:6px 10px;text-align:center">'+(i+1)+'</td>'+
