@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap" rel="stylesheet">
-<title>CytoPAP System v72 — Cervical Cytology Lab Management</title>
+<title>CytoPAP System v73 — Cervical Cytology Lab Management</title>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
 <style>
@@ -254,7 +254,7 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
         <div class="sub">Cervical Cytology<br>Lab Management</div>
       </div>
     </div>
-    <span class="ver" id="ver-badge">v72 — Bethesda 2001 / 2014 🔒</span>
+    <span class="ver" id="ver-badge">v73 — Bethesda 2001 / 2014 🔒</span>
   </div>
   <nav class="nav">
     <button class="nav-btn active" onclick="showPage('form')" id="nb-form">
@@ -289,7 +289,7 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
 <div class="sb-foot">
     <div>ThinPrep PAP / SurePath</div>
     <div>HPV DNA Genotype Testing</div>
-    <div style="margin-top:6px;opacity:.4" id="ver-foot">v72 — CytoPAP System</div>
+    <div style="margin-top:6px;opacity:.4" id="ver-foot">v73 — CytoPAP System</div>
   </div>
 </aside>
 
@@ -1278,7 +1278,7 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
 // ══════════════════════════════════════════════════
 // CytoPAP System — JSONBin Cloud Sync Edition
 // ══════════════════════════════════════════════════
-var APP_VERSION = 'v72';   // ⬅️ แก้เลขเวอร์ชันที่นี่ที่เดียว — จุดอื่นอัปเดตตามอัตโนมัติ
+var APP_VERSION = 'v73';   // ⬅️ แก้เลขเวอร์ชันที่นี่ที่เดียว — จุดอื่นอัปเดตตามอัตโนมัติ
 document.addEventListener('DOMContentLoaded', function(){
   try{
     document.title = document.title.replace(/v\d+/, APP_VERSION);
@@ -1542,7 +1542,7 @@ function checkNameHistory(name){
   matches.sort(function(a,b){return (parseInt(b.cyto)||0)-(parseInt(a.cyto)||0);});
   var rows=matches.map(function(r){
     var risk=isHighRisk(r)?' <span style="background:#c0392b;color:#fff;font-size:10px;padding:1px 6px;border-radius:20px">⚠</span>':'';
-    var papTxt=r.cat==='Negative for Intraepithelial Lesion or Malignancy'?'Negative':(r.cat==='Epithelial Cell Abnormality'?'Abnormality':(r.cat||'-'));
+    var papTxt=isHpvOnlyRec(r)?'ไม่ได้ตรวจ PAP':(r.cat==='Negative for Intraepithelial Lesion or Malignancy'?'Negative':(r.cat||'—'));
     var hpvTxt=r.hi==='yes'?(' / HPV:'+eh(r.hr||'-')):'';
     return '<tr style="border-bottom:1px solid #eee">'+
       '<td style="padding:7px 8px;font-weight:700;color:#1a3a6e;white-space:nowrap">'+eh(r.cyto)+risk+'</td>'+
@@ -1859,6 +1859,23 @@ function quickEditToFull(){
   if(id) editRec(id);
 }
 
+// ─── HPV-only: ห้ามแสดง/บันทึกผล PAP ──────────────────────────────
+// บั๊กเดิม: สั่ง HPV อย่างเดียว แต่ระบบยังเก็บค่า PAP จากฟอร์ม (ค่าเริ่มต้น = Negative)
+// ⇒ แสดงผล "Negative" ทั้งที่ไม่ได้ตรวจ PAP = ผลตรวจทางคลินิกผิด (เช่น CYTO 759)
+function isHpvOnlyRec(r){
+  if(!r) return false;
+  return r.examType==='hpv_only' || r.examType==='hpv_prog';
+}
+// badge ผล PAP — ถ้าไม่ได้ตรวจ PAP ต้องไม่โชว์ผลใดๆ
+function papBadge(r, small){
+  var fs = small ? 'font-size:10px' : '';
+  if(isHpvOnlyRec(r)) return '<span class="badge b-gray" style="'+fs+'">ไม่ได้ตรวจ PAP</span>';
+  if(!r.cat) return '<span class="badge b-gray" style="'+fs+'">—</span>';
+  return (r.cat==='Negative for Intraepithelial Lesion or Malignancy')
+    ? '<span class="badge b-green" style="'+fs+'">Negative</span>'
+    : '<span class="badge b-red" style="'+fs+'">'+eh(r.cat)+'</span>';
+}
+
 function collectForm(){
   var examType=R('examType')||'pap_hpv'; var eDef=EXAM_DEF[examType]||{label:'ThinPrep PAP + HPV DNA'};
   var isHpvOnly=(examType==='hpv_only'||examType==='hpv_prog');
@@ -1873,11 +1890,15 @@ function collectForm(){
   if(sqmVal&&sqmVal.indexOf('HSIL')!==-1&&hsilSubs.length){
     sqmFull=sqmVal+' — '+hsilSubs.join(', ');
   }
+  // สั่ง HPV อย่างเดียว → ไม่บันทึกผล PAP ใดๆ (กันค่าเริ่มต้น "Negative" หลุดเข้าไป)
   return{name:V('f-name'),age:V('f-age'),dc:V('f-dc'),dr:V('f-dr'),phone:V('f-phone'),
     price:V('f-price'),cyto:V('f-cyto'),clinic:V('f-clinic'),examType:examType,examLabel:eDef.label,
-    sp:R('sp'),mt:R('mt'),adq:R('adq'),tz:R('tz'),cat:R('cat'),
-    orgs:CH('pg-org'),orgsEpi:CHN('org-epi'),nnv:CH('pg-nnv'),rcc:CH('pg-rcc'),
-    sqm:sqmFull,sqmBase:sqmVal,lsilSubs:lsilSubs,hsilSubs:hsilSubs,
+    sp:R('sp'),mt:R('mt'),
+    adq:isHpvOnly?'':R('adq'), tz:isHpvOnly?'':R('tz'), cat:isHpvOnly?'':R('cat'),
+    orgs:isHpvOnly?[]:CH('pg-org'), orgsEpi:isHpvOnly?[]:CHN('org-epi'),
+    nnv:isHpvOnly?[]:CH('pg-nnv'), rcc:isHpvOnly?[]:CH('pg-rcc'),
+    sqm:isHpvOnly?'':sqmFull, sqmBase:isHpvOnly?'':sqmVal,
+    lsilSubs:isHpvOnly?[]:lsilSubs, hsilSubs:isHpvOnly?[]:hsilSubs,
     gln:R('gln'),rmk:V('f-rmk'),
     hi:(function(){
       var et=R('examType')||'pap_hpv';
@@ -2447,7 +2468,7 @@ function renderRec(){
   em.style.display='none';
   tb.innerHTML=indexed.map(function(x){
     var r=x.rec; var ri=x.ri;
-    var cB=r.cat==='Negative for Intraepithelial Lesion or Malignancy'?'<span class="badge b-green">Negative</span>':'<span class="badge b-red">'+(r.cat||'—')+'</span>';
+    var cB=papBadge(r,false);
     var hB=r.hi==='yes'?(r.hr==='Nondetected'?'<span class="badge b-green">Nondetected</span>':'<span class="badge b-red">Detected</span>'):'<span class="badge b-gray">N/A</span>';
     var eL='<span class="badge b-gray" style="font-size:11px">'+eh(r.examLabel||r.examType||'—')+'</span>';
     var hiRisk=isHighRisk(r);
@@ -2477,8 +2498,9 @@ function renderRec(){
       cards.innerHTML=indexed.map(function(x){
         var r=x.rec;
         var _ro2=isReadOnly();
-        var catColor=r.cat==='Negative for Intraepithelial Lesion or Malignancy'?'#1a7a3c':r.cat==='Epithelial Cell Abnormality'?'#e53e3e':'#805ad5';
-        var catShort=r.cat==='Negative for Intraepithelial Lesion or Malignancy'?'Negative':r.cat==='Epithelial Cell Abnormality'?'Abnormality':(r.cat||'—');
+        var _hpvOnlyC=isHpvOnlyRec(r);
+        var catColor=_hpvOnlyC?'#6b7a99':(r.cat==='Negative for Intraepithelial Lesion or Malignancy'?'#1a7a3c':r.cat==='Epithelial Cell Abnormality'?'#e53e3e':'#805ad5');
+        var catShort=_hpvOnlyC?'ไม่ได้ตรวจ PAP':(r.cat==='Negative for Intraepithelial Lesion or Malignancy'?'Negative':r.cat==='Epithelial Cell Abnormality'?'Abnormality':(r.cat||'—'));
         var hpv=r.hi==='yes'?(r.hr==='Nondetected'?'<span style="background:#d4edda;color:#1a7a3c;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700">Nondetected</span>':'<span style="background:#fde8e8;color:#e53e3e;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700">Detected</span>'):'<span style="background:#f0f4f8;color:#6b7a99;padding:2px 8px;border-radius:20px;font-size:11px">N/A</span>';
         var hiRisk=isHighRisk(r);
         var alertBar=hiRisk?'<div style="background:#c0392b;color:#fff;font-size:12px;font-weight:800;text-align:center;padding:5px;border-radius:8px;margin-bottom:8px">⚠ ผลผิดปกติ — ควรติดตาม</div>':'';
@@ -2569,7 +2591,7 @@ function previewBatch(){
   cnt.innerHTML='<strong style="color:#1a3a6e">พบ '+matched.length+' รายการ</strong> (CYTO No. '+from+' ถึง '+to+')';
   document.getElementById('batch-tbody').innerHTML=matched.map(function(r){
     var ri=REC.indexOf(r);
-    var cB=r.cat==='Negative for Intraepithelial Lesion or Malignancy'?'<span class="badge b-green">Negative</span>':'<span class="badge b-red">'+(r.cat||'—')+'</span>';
+    var cB=papBadge(r,false);
     var hB=r.hi==='yes'?(r.hr==='Nondetected'?'<span class="badge b-green">Nondetected</span>':'<span class="badge b-red">Detected</span>'):'<span class="badge b-gray">N/A</span>';
     return '<tr><td><strong style="color:#1a3a6e">'+eh(r.cyto)+'</strong></td><td>'+eh(r.name)+'</td><td>'+eh(r.age)+'</td><td style="font-size:12px">'+eh(r.clinic)+'</td><td>'+fd(r.dr)+'</td><td>'+cB+'</td><td>'+hB+'</td>'+
       '<td style="text-align:center"><input type="checkbox" data-ri="'+ri+'" class="batch-cb" checked style="width:16px;height:16px;cursor:pointer"></td></tr>';
@@ -2693,9 +2715,7 @@ function renderBilling(){
         '<th style="text-align:right">ค่าตรวจ (฿)</th>'+
       '</tr></thead><tbody>'+
       d.records.map(function(r){
-        var cB=r.cat==='Negative for Intraepithelial Lesion or Malignancy'?
-          '<span class="badge b-green">Negative</span>':
-          '<span class="badge b-red">'+(r.cat?r.cat.substring(0,8):'—')+'</span>';
+        var cB=papBadge(r,true);
         var hB=r.hi==='yes'?(r.hr==='Nondetected'?
           '<span class="badge b-green">Non</span>':
           '<span class="badge b-red">Det</span>'):
@@ -3045,7 +3065,7 @@ function renderStats(){
   var hpvPos=hpvTested.filter(function(r){return r.hr==='Detected';}).length;
   var hpvNeg=hpvTested.filter(function(r){return r.hr==='Nondetected';}).length;
   var hpvNa=total-hpvTested.length;
-  var neg=REC.filter(function(r){return r.cat==='Negative for Intraepithelial Lesion or Malignancy';}).length;
+  var neg=REC.filter(function(r){return !isHpvOnlyRec(r) && r.cat==='Negative for Intraepithelial Lesion or Malignancy';}).length;
   var abn=REC.filter(function(r){return r.cat==='Epithelial Cell Abnormality';}).length;
   var oth=total-neg-abn;
   var totalRev=REC.reduce(function(s,r){return s+(parseFloat(r.price)||0);},0);
@@ -3262,7 +3282,7 @@ function exportExcelMonth(){
     var genos=[];
     if(r.hrGenos&&r.hrGenos.length) genos.push('HR:'+r.hrGenos.join(','));
     if(r.lrGenos&&r.lrGenos.length) genos.push('LR:'+r.lrGenos.join(','));
-    wsData.push([r.cyto||'',r.name||'',r.age||'',r.clinic||'',fd(r.dc),fd(r.dr),r.cat||'',r.hr||'N/A',genos.join(' / '),parseFloat(r.price)||0]);
+    wsData.push([r.cyto||'',r.name||'',r.age||'',r.clinic||'',fd(r.dc),fd(r.dr),(isHpvOnlyRec(r)?'ไม่ได้ตรวจ PAP':(r.cat||'')),r.hr||'N/A',genos.join(' / '),parseFloat(r.price)||0]);
   });
   wsData.push(['']);
   // สรุปตามคลินิก
@@ -3273,7 +3293,7 @@ function exportExcelMonth(){
     var c=r.clinic||'ไม่ระบุ';
     if(!cm[c])cm[c]={n:0,rev:0,neg:0,abn:0,hpv:0};
     cm[c].n++;cm[c].rev+=(parseFloat(r.price)||0);
-    if(r.cat==='Negative for Intraepithelial Lesion or Malignancy')cm[c].neg++;
+    if(!isHpvOnlyRec(r) && r.cat==='Negative for Intraepithelial Lesion or Malignancy')cm[c].neg++;
     if(r.cat==='Epithelial Cell Abnormality')cm[c].abn++;
     if(r.hr==='Detected')cm[c].hpv++;
   });
@@ -3600,7 +3620,7 @@ function exportExcel(){
   if(!REC.length){toast('ยังไม่มีข้อมูล','e');return}
   if(typeof XLSX==='undefined'){toast('กำลังโหลด...','e');return}
   var wsData=[['CYTO No.','ชื่อ-สกุล','อายุ','คลินิก','วันที่รับ','วันที่รายงาน','เบอร์โทร','Specimen','Method','Adequacy','TZ','Categorization','Organism','Squamous','Glandular','Remarks','HPV','Kit','HPV Method','HPV Result','Genotypes','Reported by','Approved by','ราคา (฿)']];
-  REC.forEach(function(r){wsData.push([r.cyto||'',r.name||'',r.age||'',r.clinic||'',fd(r.dc),fd(r.dr),r.phone||'',r.sp||'',r.mt||'',r.adq||'',r.tz||'',r.cat||'',(r.orgs||[]).join(', '),r.sqm||'',r.gln||'',r.rmk||'',r.hi==='yes'?'รวม':'ไม่รวม',r.hkit||'',r.hmth||'',r.hr||'',(r.genos||[]).join(', '),r.rn||'',r.an||'',parseFloat(r.price)||0])});
+  REC.forEach(function(r){wsData.push([r.cyto||'',r.name||'',r.age||'',r.clinic||'',fd(r.dc),fd(r.dr),r.phone||'',r.sp||'',r.mt||'',r.adq||'',r.tz||'',(isHpvOnlyRec(r)?'ไม่ได้ตรวจ PAP':(r.cat||'')),(r.orgs||[]).join(', '),r.sqm||'',r.gln||'',r.rmk||'',r.hi==='yes'?'รวม':'ไม่รวม',r.hkit||'',r.hmth||'',r.hr||'',(r.genos||[]).join(', '),r.rn||'',r.an||'',parseFloat(r.price)||0])});
   var clinicMap={};
   REC.forEach(function(r){var c=r.clinic||'ไม่ระบุ';if(!clinicMap[c])clinicMap[c]={count:0,total:0};clinicMap[c].count++;clinicMap[c].total+=(parseFloat(r.price)||0)});
   var sumData=[['คลินิก','จำนวนราย','ยอดรวม (฿)','เฉลี่ย/ราย (฿)']];
@@ -3619,7 +3639,7 @@ function exportExcel(){
 // ─── SEND EMAIL TO CLINIC ─────────────────────────────────────────────────
 function sendEmailClinic(r){
   var cl=getClinicInfo(r.clinic||'');
-  var catShort=r.cat==='Negative for Intraepithelial Lesion or Malignancy'?r.cat:(r.cat||'—');
+  var catShort=isHpvOnlyRec(r)?'ไม่ได้ตรวจ PAP (สั่งตรวจ HPV อย่างเดียว)':(r.cat==='Negative for Intraepithelial Lesion or Malignancy'?r.cat:(r.cat||'—'));
   var hpvArr=[];
   if(r.hi==='yes'){
     if(r.hr==='Nondetected'){hpvArr.push('HPV DNA: Nondetected');}
@@ -3657,7 +3677,7 @@ function sendEmailClinic(r){
 
 // ─── SEND LINE TO CLINIC ──────────────────────────────────────────────────
 function sendLineClinic(r){
-  var catShort=r.cat==='Negative for Intraepithelial Lesion or Malignancy'?'Negative':(r.cat||'—');
+  var catShort=isHpvOnlyRec(r)?'ไม่ได้ตรวจ PAP (HPV อย่างเดียว)':(r.cat==='Negative for Intraepithelial Lesion or Malignancy'?'Negative':(r.cat||'—'));
   var hpvArr=[];
   if(r.hi==='yes'){
     if(r.hr==='Nondetected'){hpvArr.push('HPV DNA: Nondetected');}
