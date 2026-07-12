@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap" rel="stylesheet">
-<title>CytoPAP System v69 — Cervical Cytology Lab Management</title>
+<title>CytoPAP System v70 — Cervical Cytology Lab Management</title>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
 <style>
@@ -199,6 +199,15 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
 /* === EMPTY === */
 .empty-state{text-align:center;padding:44px 20px;color:#94a3b8}
 .empty-state svg{margin:0 auto 12px;display:block;opacity:.35}
+
+/* ─── พิมพ์ในหน้าเดียวกัน — ใช้ได้ทั้ง iPhone/iPad/PC (popup ถูก iOS บล็อก) ─── */
+#print-host{display:none}
+@media print{
+  body.printing > *{display:none !important}
+  body.printing > #print-host{display:block !important}
+  body.printing{background:#fff !important;margin:0 !important;padding:0 !important}
+  @page{size:A4;margin:0}
+}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -233,7 +242,7 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
         <div class="sub">Cervical Cytology<br>Lab Management</div>
       </div>
     </div>
-    <span class="ver" id="ver-badge">v69 — Bethesda 2001 / 2014 🔒</span>
+    <span class="ver" id="ver-badge">v70 — Bethesda 2001 / 2014 🔒</span>
   </div>
   <nav class="nav">
     <button class="nav-btn active" onclick="showPage('form')" id="nb-form">
@@ -268,7 +277,7 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
 <div class="sb-foot">
     <div>ThinPrep PAP / SurePath</div>
     <div>HPV DNA Genotype Testing</div>
-    <div style="margin-top:6px;opacity:.4" id="ver-foot">v69 — CytoPAP System</div>
+    <div style="margin-top:6px;opacity:.4" id="ver-foot">v70 — CytoPAP System</div>
   </div>
 </aside>
 
@@ -1252,7 +1261,7 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
 // ══════════════════════════════════════════════════
 // CytoPAP System — JSONBin Cloud Sync Edition
 // ══════════════════════════════════════════════════
-var APP_VERSION = 'v69';   // ⬅️ แก้เลขเวอร์ชันที่นี่ที่เดียว — จุดอื่นอัปเดตตามอัตโนมัติ
+var APP_VERSION = 'v70';   // ⬅️ แก้เลขเวอร์ชันที่นี่ที่เดียว — จุดอื่นอัปเดตตามอัตโนมัติ
 document.addEventListener('DOMContentLoaded', function(){
   try{
     document.title = document.title.replace(/v\d+/, APP_VERSION);
@@ -1373,6 +1382,7 @@ async function pushToJb(){
     });
     if(!res.ok) throw new Error('HTTP '+res.status);
     setSyncStatus(true,'ซิงค์แล้ว — '+new Date().toLocaleTimeString('th-TH'));
+    try{ if(typeof setPending==='function') setPending(false); }catch(e){}
     return true;
   } catch(e){
     setSyncStatus(false,'ซิงค์ไม่สำเร็จ: '+e.message);
@@ -2058,26 +2068,60 @@ function closeMo(){document.getElementById('mo-prev').classList.remove('open')}
 function doPrint(){printDoc(_pd||collectForm())}
 
 // ─── PRINT SINGLE ─────────────────────────────────
+// ─── ตัวช่วยพิมพ์กลาง — ใช้ได้ทั้ง iPhone / iPad / PC ───────────────
+// เดิมทุกหน้าพิมพ์ใช้ window.open + document.write ⇒ iOS Safari บล็อก ⇒ เปิดไม่ได้เลย
+// ตัวนี้แสดงเนื้อหาในหน้าเดิมแล้วสั่งพิมพ์ — ยัง Save as PDF ได้ปกติ
+function printInPage(innerHtml, docTitle){
+  var host=document.getElementById('print-host');
+  if(!host){ host=document.createElement('div'); host.id='print-host'; document.body.appendChild(host); }
+  host.innerHTML=innerHtml;
+  var oldTitle=document.title;
+  if(docTitle) document.title=docTitle;
+  document.body.classList.add('printing');
+  var done=false;
+  function cleanup(){
+    if(done) return; done=true;
+    document.body.classList.remove('printing');
+    document.title=oldTitle;
+    host.innerHTML='';
+    window.removeEventListener('afterprint',cleanup);
+  }
+  window.addEventListener('afterprint',cleanup);
+  setTimeout(function(){
+    try{ window.print(); }
+    catch(e){ cleanup(); toast('เปิดหน้าพิมพ์ไม่ได้: '+e.message,'e'); }
+  },200);
+  setTimeout(cleanup,60000);
+}
+
 function printDoc(d){
   if(!d||!d.name){toast('ข้อมูลไม่ครบ ไม่สามารถพิมพ์ได้','e');return;}
   var reportHtml;
   try{reportHtml=buildReport(d);}
   catch(e){toast('เกิดข้อผิดพลาดในการสร้างรายงาน: '+e.message,'e');return;}
-  var fn=suggestFilename(d);
-  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap" rel="stylesheet"><title>'+fn+'</title>'+
-    '<style>'+
-    '@page{size:A4;margin:0}'+
-    'html,body{margin:0;padding:0;width:210mm}'+
-    'body{font-family:"Sarabun","TH Sarabun New","Leelawadee UI","Leelawadee","Tahoma",serif}'+
-    '*{box-sizing:border-box;-webkit-print-color-adjust:exact}'+
-    'div,table,td{page-break-inside:avoid}'+
-    '</style>'+
-    '</head><body>'+reportHtml+
-    '<scr'+'ipt>window.onload=function(){setTimeout(function(){window.print();},300);}<\/scr'+'ipt></body></html>';
-  var w=window.open('','_blank','width=960,height=760');
-  if(!w){toast('กรุณาอนุญาต Pop-up แล้วลองใหม่','e');return;}
-  try{w.document.write(html);w.document.close();}
-  catch(e){try{w.close();}catch(_){}toast('เปิดหน้าพิมพ์ไม่ได้: '+e.message,'e');}
+  // ─── พิมพ์ในหน้าเดียวกัน (ไม่ใช้ window.open) ───
+  // เดิมใช้ popup + document.write ⇒ iOS Safari บล็อก ⇒ iPhone/iPad เปิดผลไม่ได้เลย
+  // วิธีนี้ใช้ได้ทุกเครื่อง และยัง "Save as PDF" ได้จากกล่องพิมพ์เหมือนเดิม
+  var host=document.getElementById('print-host');
+  if(!host){ host=document.createElement('div'); host.id='print-host'; document.body.appendChild(host); }
+  host.innerHTML=reportHtml;
+  var oldTitle=document.title;
+  document.title=suggestFilename(d);      // ใช้เป็นชื่อไฟล์ตอน Save as PDF
+  document.body.classList.add('printing');
+  var done=false;
+  function cleanup(){
+    if(done) return; done=true;
+    document.body.classList.remove('printing');
+    document.title=oldTitle;
+    host.innerHTML='';
+    window.removeEventListener('afterprint',cleanup);
+  }
+  window.addEventListener('afterprint',cleanup);
+  setTimeout(function(){
+    try{ window.print(); }
+    catch(e){ cleanup(); toast('เปิดหน้าพิมพ์ไม่ได้: '+e.message,'e'); }
+  },200);
+  setTimeout(cleanup,60000);   // สำรอง: iOS บางรุ่นไม่ยิง afterprint
 }
 
 // ─── SAVE & PRINT ─────────────────────────────────
@@ -2139,11 +2183,12 @@ async function saveAndPrint(){
   setTimeout(function(){ var f=document.getElementById('f-name'); if(f && document.getElementById('page-form').classList.contains('active')){ f.focus(); var L=f.value.length; if(f.setSelectionRange) f.setSelectionRange(L,L); } }, 900);
 }
 
-// ─── M1: เตือนดังๆ เมื่อข้อมูลยังไม่ขึ้น Cloud ────────────────
-// ปัญหาเดิม: แอปขึ้น "บันทึกสำเร็จ" ทั้งที่ยังไม่ได้ซิงค์ → เน็ตหลุด = ข้อมูลอยู่แค่เครื่องเดียว
-function warnUnsynced(cyto){
-  toast('⚠️ No.'+cyto+' ยังไม่ขึ้น Cloud! ข้อมูลอยู่แค่เครื่องนี้','e',9000);
+// ─── M1 + โหมดออฟไลน์: บันทึกได้ไม่ต้องมีเน็ต แล้วซิงค์ย้อนหลังอัตโนมัติ ───
+// ปัญหาเดิม: แอปขึ้น "บันทึกสำเร็จ" ทั้งที่ยังไม่ขึ้น Cloud → เน็ตหลุด = ข้อมูลอยู่แค่เครื่องเดียวโดยไม่รู้ตัว
+function setPending(v){
+  try{ localStorage.setItem('cp_pending', v?'1':'0'); }catch(e){}
   var b=document.getElementById('unsync-banner');
+  if(!v){ if(b) b.style.display='none'; return; }
   if(!b){
     b=document.createElement('div');
     b.id='unsync-banner';
@@ -2151,22 +2196,68 @@ function warnUnsynced(cyto){
       'padding:12px 16px;font-size:14px;font-weight:700;text-align:center;box-shadow:0 -2px 12px rgba(0,0,0,.25)';
     document.body.appendChild(b);
   }
-  b.innerHTML='⚠️ ข้อมูลบางรายการยังไม่ได้ซิงค์ขึ้น Cloud — อยู่แค่ในเครื่องนี้เท่านั้น '+
+  b.innerHTML='⚠️ ข้อมูลยังไม่ได้ซิงค์ขึ้น Cloud — อยู่แค่ในเครื่องนี้ '+
     '<button onclick="retrySync()" style="margin-left:10px;padding:5px 14px;border-radius:6px;border:0;'+
-    'background:#fff;color:#c0392b;font-weight:800;cursor:pointer">ลองซิงค์อีกครั้ง</button>';
+    'background:#fff;color:#c0392b;font-weight:800;cursor:pointer">ซิงค์เดี๋ยวนี้</button>';
   b.style.display='block';
 }
-async function retrySync(){
-  toast('กำลังลองซิงค์ใหม่...','i',2000);
-  var ok=await pushToJb();
-  var b=document.getElementById('unsync-banner');
-  if(ok){
-    if(b) b.style.display='none';
-    toast('✅ ซิงค์ขึ้น Cloud สำเร็จแล้ว — ข้อมูลปลอดภัย');
+function isPending(){ try{ return localStorage.getItem('cp_pending')==='1'; }catch(e){ return false; } }
+
+function warnUnsynced(cyto){
+  if(!navigator.onLine){
+    toast('📴 ออฟไลน์ — บันทึก No.'+cyto+' ในเครื่องแล้ว จะซิงค์อัตโนมัติเมื่อมีเน็ต','e',7000);
   } else {
-    toast('ยังซิงค์ไม่ได้ — ตรวจอินเทอร์เน็ตแล้วลองอีกครั้ง','e',7000);
+    toast('⚠️ No.'+cyto+' ยังไม่ขึ้น Cloud! ข้อมูลอยู่แค่เครื่องนี้','e',9000);
+  }
+  setPending(true);
+}
+
+// รวมข้อมูลกับ Cloud ก่อน push — กันเครื่องที่ออฟไลน์ไปเขียนทับงานของเครื่องอื่น
+async function mergeAndPush(){
+  try{
+    var res = await fetch(fbPath(true));
+    if(res.ok){
+      var data = await res.json();
+      var cloud = (data && data.records) ? data.records : [];
+      if(cloud.length){
+        var map = {};
+        cloud.forEach(function(r){ if(r && r._id) map[String(r._id)] = r; });
+        // ข้อมูลในเครื่องทับได้เฉพาะรายการที่ใหม่กว่า — รายการที่เครื่องอื่นเพิ่มไว้จะไม่หาย
+        REC.forEach(function(r){
+          if(!r || !r._id) return;
+          var k = String(r._id), c = map[k];
+          if(!c) { map[k] = r; return; }
+          var tl = r.savedAt || '', tc = c.savedAt || '';
+          map[k] = (tl >= tc) ? r : c;
+        });
+        var merged = Object.keys(map).map(function(k){ return map[k]; });
+        merged.sort(function(a,b){ return (parseInt(b.cyto)||0)-(parseInt(a.cyto)||0); });
+        REC = merged; saveLocal();
+      }
+    }
+  }catch(e){ /* ดึง Cloud ไม่ได้ → push ตรงไปเลย */ }
+  return await pushToJb();
+}
+
+async function retrySync(){
+  if(!navigator.onLine){ toast('ยังไม่มีอินเทอร์เน็ต — จะซิงค์ให้อัตโนมัติเมื่อเน็ตกลับมา','e',5000); return; }
+  toast('กำลังซิงค์...','i',2000);
+  var ok = await mergeAndPush();
+  if(ok){
+    setPending(false);
+    renderRec(); updateNextNo();
+    toast('✅ ซิงค์ขึ้น Cloud สำเร็จ — ข้อมูลปลอดภัยแล้ว');
+  } else {
+    toast('ยังซิงค์ไม่ได้ — ลองอีกครั้งภายหลัง','e',6000);
   }
 }
+
+// ซิงค์อัตโนมัติเมื่อเน็ตกลับมา + ตรวจซ้ำทุก 60 วิ + ตอนเปิดแอป
+window.addEventListener('online', function(){
+  if(isPending()){ toast('📶 เน็ตกลับมาแล้ว — กำลังซิงค์อัตโนมัติ...','i',3000); retrySync(); }
+});
+window.addEventListener('offline', function(){ toast('📴 ออฟไลน์ — ยังบันทึกได้ตามปกติ ระบบจะซิงค์ให้เมื่อมีเน็ต','e',5000); });
+setInterval(function(){ if(isPending() && navigator.onLine) retrySync(); }, 60000);
 
 // ─── ตั้งค่า radio + pill class + panel ที่เกี่ยวข้อง ───
 function setPillRadio(name,value){
@@ -2491,9 +2582,7 @@ function printBatch(){
     '</style>'+
     '</head><body>'+pages+
     '<scr'+'ipt>window.onload=function(){setTimeout(function(){window.print();},400);}<\/scr'+'ipt></body></html>';
-  var w=window.open('','_blank','width=960,height=760');
-  if(!w){toast('กรุณาอนุญาต Pop-up แล้วลองใหม่','e');return}
-  w.document.write(html);w.document.close();
+  printInPage(html,'CYTO Batch Print');
   toast('เปิดหน้าพิมพ์ '+selected.length+' ใบ');
 }
 
@@ -2631,14 +2720,14 @@ function printBilling(){
   // แก้บั๊ก: เดิมหัวเรื่องโชว์แค่เดือนเริ่มต้น ทั้งที่เลือกเป็นช่วงเดือนได้
   var rangeLabel = (mFrom===mTo) ? (MONTH_TH[mFrom]+' '+y) : (MONTH_TH[mFrom]+' — '+MONTH_TH[mTo]+' '+y);
   var grand=document.getElementById('bill-grand').innerHTML; var clinics=document.getElementById('bill-clinics').innerHTML;
-  var w=window.open('','_blank','width=960,height=760'); if(!w){toast('อนุญาต pop-up แล้วลองใหม่','e');return}
+
   var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>สรุปค่าตรวจ '+rangeLabel+'</title>'+
     '<style>@page{size:A4;margin:15mm}body{font-family:"TH Sarabun New","Sarabun",sans-serif;font-size:13pt}table{width:100%;border-collapse:collapse}th,td{border:1px solid #000;padding:4px 8px;font-size:11pt}th{background:#f0f0f0;font-weight:bold}.badge{display:inline-block;padding:1px 8px;border-radius:99px;font-size:10pt}.b-green{background:#e6f9f0;color:#1a7a3c}.b-red{background:#fff0f0;color:#c00}.b-gray{background:#f0f0f0;color:#666}h2{color:#1a3a6e;font-size:16pt;margin:0 0 12px}.card-head{font-size:13pt;font-weight:bold;color:#1a3a6e;padding:8px 0;border-bottom:2px solid #1a3a6e;margin-bottom:10px}</style></head><body>'+
     '<h2>สรุปค่าตรวจ — '+rangeLabel+'</h2>'+
     '<div style="font-size:10pt;color:#555;margin:-6px 0 10px">เรียงตามวันที่เก็บส่งตรวจ</div>'+
     '<div>'+grand+'</div><div>'+clinics+'</div>'+
     '<scr'+'ipt>window.onload=function(){setTimeout(function(){window.print();},300);}<\/scr'+'ipt></body></html>';
-  w.document.write(html);w.document.close();
+  printInPage(html,'สรุปค่าตรวจ '+rangeLabel);
 }
 function initBillingPage(){
   var now=new Date();
@@ -3288,8 +3377,7 @@ function exportInvoice(){
     '</div>'+
     '<div style="margin-top:40px;text-align:right;font-size:12px;color:#999">CytoPAP System — '+CFG.nth+'</div>'+
     '</body></html>';
-  var w=window.open('','_blank','width=900,height=700');
-  if(w){w.document.write(html);w.document.close();}
+  printInPage(html,'QR Codes - CytoPAP');
   toast('เปิดใบแจ้งหนี้ '+cSel+' แล้วครับ ✅');
 }
 
@@ -3361,9 +3449,8 @@ function printAllQR(){
     var cnt=wrap.querySelectorAll('div')[1].textContent;
     if(canvas) html+='<div class="item"><img src="'+canvas.toDataURL()+'" width="140"><div class="name">'+name+'</div><div class="cnt">'+cnt+'</div></div>';
   });
-  html+='</div>'+'<scr'+'ipt>window.onload=function(){window.print();}<'+'/scr'+'ipt></body></html>';
-  var w=window.open('','_blank','width=900,height=700');
-  if(w){w.document.write(html);w.document.close();}
+  html+='</div>'+'</body></html>';
+  printInPage(html,'QR Codes - CytoPAP');
 }
 // ─── AUTO-BACKUP (JSON) ───────────────────────────────────────────────────
 function buildBackupObj(){
@@ -3600,6 +3687,14 @@ loadData();
 fillClinicSelect();
 fillDefaultStaff();
 setupPills();
+
+// ตอนเปิดแอป: ถ้ารอบก่อนบันทึกตอนออฟไลน์ไว้ → เตือนและซิงค์ให้อัตโนมัติ
+try{
+  if(isPending()){
+    setPending(true);
+    if(navigator.onLine) setTimeout(function(){ retrySync(); }, 3000);
+  }
+}catch(e){}
 
 // ตรวจสอบ ?clinic=xxx ใน URL — โหมดคลินิกดูผลตัวเอง
 var _urlClinic=(new URLSearchParams(window.location.search)).get('clinic')||'';
