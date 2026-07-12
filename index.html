@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap" rel="stylesheet">
-<title>CytoPAP System v71 — Cervical Cytology Lab Management</title>
+<title>CytoPAP System v72 — Cervical Cytology Lab Management</title>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
 <style>
@@ -200,12 +200,24 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
 .empty-state{text-align:center;padding:44px 20px;color:#94a3b8}
 .empty-state svg{margin:0 auto 12px;display:block;opacity:.35}
 
-/* ─── พิมพ์ในหน้าเดียวกัน — ใช้ได้ทั้ง iPhone/iPad/PC (popup ถูก iOS บล็อก) ─── */
-#print-host{display:none}
+/* ─── ตัวอย่าง + พิมพ์ในหน้าเดียวกัน — iPhone/iPad/PC ───────────────
+   iOS Safari บล็อกทั้ง popup และ window.print() ที่ไม่ได้มาจากการ "แตะปุ่ม" โดยตรง
+   จึงต้องแสดงตัวอย่างเต็มจอ แล้วให้ผู้ใช้กดปุ่มพิมพ์เอง                        */
+#print-overlay{display:none;position:fixed;inset:0;z-index:10000;background:#f2f5fa;overflow:auto;-webkit-overflow-scrolling:touch}
+#print-overlay.open{display:block}
+#print-toolbar{position:sticky;top:0;z-index:2;display:flex;gap:10px;align-items:center;justify-content:center;
+  padding:10px 12px;background:#1a3a6e;box-shadow:0 2px 10px rgba(0,0,0,.2)}
+#print-toolbar button{padding:11px 20px;border-radius:10px;border:0;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit}
+#print-toolbar .pb-print{background:#fff;color:#1a3a6e}
+#print-toolbar .pb-close{background:transparent;color:#fff;border:2px solid rgba(255,255,255,.6)}
+#print-host{background:#fff;margin:0 auto;max-width:210mm;padding:0}
+@media screen and (max-width:820px){ #print-host{transform-origin:top left;width:100%} }
 @media print{
-  body.printing > *{display:none !important}
-  body.printing > #print-host{display:block !important}
-  body.printing{background:#fff !important;margin:0 !important;padding:0 !important}
+  body.printing > *:not(#print-overlay){display:none !important}
+  body.printing #print-overlay{display:block !important;position:static !important;overflow:visible !important;background:#fff !important}
+  body.printing #print-toolbar{display:none !important}
+  body.printing .no-print{display:none !important}
+  body.printing #print-host{max-width:none !important;margin:0 !important}
   @page{size:A4;margin:0}
 }
 </style>
@@ -242,7 +254,7 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
         <div class="sub">Cervical Cytology<br>Lab Management</div>
       </div>
     </div>
-    <span class="ver" id="ver-badge">v71 — Bethesda 2001 / 2014 🔒</span>
+    <span class="ver" id="ver-badge">v72 — Bethesda 2001 / 2014 🔒</span>
   </div>
   <nav class="nav">
     <button class="nav-btn active" onclick="showPage('form')" id="nb-form">
@@ -277,7 +289,7 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
 <div class="sb-foot">
     <div>ThinPrep PAP / SurePath</div>
     <div>HPV DNA Genotype Testing</div>
-    <div style="margin-top:6px;opacity:.4" id="ver-foot">v71 — CytoPAP System</div>
+    <div style="margin-top:6px;opacity:.4" id="ver-foot">v72 — CytoPAP System</div>
   </div>
 </aside>
 
@@ -1266,7 +1278,7 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
 // ══════════════════════════════════════════════════
 // CytoPAP System — JSONBin Cloud Sync Edition
 // ══════════════════════════════════════════════════
-var APP_VERSION = 'v71';   // ⬅️ แก้เลขเวอร์ชันที่นี่ที่เดียว — จุดอื่นอัปเดตตามอัตโนมัติ
+var APP_VERSION = 'v72';   // ⬅️ แก้เลขเวอร์ชันที่นี่ที่เดียว — จุดอื่นอัปเดตตามอัตโนมัติ
 document.addEventListener('DOMContentLoaded', function(){
   try{
     document.title = document.title.replace(/v\d+/, APP_VERSION);
@@ -2073,30 +2085,45 @@ function closeMo(){document.getElementById('mo-prev').classList.remove('open')}
 function doPrint(){printDoc(_pd||collectForm())}
 
 // ─── PRINT SINGLE ─────────────────────────────────
-// ─── ตัวช่วยพิมพ์กลาง — ใช้ได้ทั้ง iPhone / iPad / PC ───────────────
-// เดิมทุกหน้าพิมพ์ใช้ window.open + document.write ⇒ iOS Safari บล็อก ⇒ เปิดไม่ได้เลย
-// ตัวนี้แสดงเนื้อหาในหน้าเดิมแล้วสั่งพิมพ์ — ยัง Save as PDF ได้ปกติ
+// ─── ตัวช่วยพิมพ์กลาง — iPhone / iPad / PC ───────────────────────────
+// iOS Safari บล็อก window.open และบล็อก window.print() ที่ไม่ได้มาจากการแตะปุ่มโดยตรง
+// จึงแสดง "ตัวอย่างเต็มจอ" แล้วให้ผู้ใช้แตะปุ่มพิมพ์เอง = ทำงานได้ทุกเครื่องแน่นอน
+function ensurePrintOverlay(){
+  var ov=document.getElementById('print-overlay');
+  if(ov) return ov;
+  ov=document.createElement('div');
+  ov.id='print-overlay';
+  ov.innerHTML='<div id="print-toolbar">'+
+      '<button type="button" class="pb-print" onclick="doPrintNow()">🖨️ พิมพ์ / บันทึก PDF</button>'+
+      '<button type="button" class="pb-close" onclick="closePrintOverlay()">ปิด</button>'+
+    '</div><div id="print-host"></div>';
+  document.body.appendChild(ov);
+  return ov;
+}
 function printInPage(innerHtml, docTitle){
-  var host=document.getElementById('print-host');
-  if(!host){ host=document.createElement('div'); host.id='print-host'; document.body.appendChild(host); }
-  host.innerHTML=innerHtml;
-  var oldTitle=document.title;
-  if(docTitle) document.title=docTitle;
-  document.body.classList.add('printing');
-  var done=false;
-  function cleanup(){
-    if(done) return; done=true;
-    document.body.classList.remove('printing');
-    document.title=oldTitle;
-    host.innerHTML='';
-    window.removeEventListener('afterprint',cleanup);
+  var ov=ensurePrintOverlay();
+  document.getElementById('print-host').innerHTML=innerHtml;
+  if(docTitle){
+    if(!window._oldTitle) window._oldTitle=document.title;
+    document.title=docTitle;          // ใช้เป็นชื่อไฟล์ตอน Save as PDF
   }
-  window.addEventListener('afterprint',cleanup);
-  setTimeout(function(){
-    try{ window.print(); }
-    catch(e){ cleanup(); toast('เปิดหน้าพิมพ์ไม่ได้: '+e.message,'e'); }
-  },200);
-  setTimeout(cleanup,60000);
+  ov.classList.add('open');
+  ov.scrollTop=0;
+  document.body.style.overflow='hidden';
+}
+// สำคัญ: window.print() ต้องถูกเรียก "ตรงๆ" ในจังหวะที่ผู้ใช้แตะปุ่ม (ห้ามหน่วงเวลา) ไม่งั้น iOS บล็อก
+function doPrintNow(){
+  document.body.classList.add('printing');
+  try{ window.print(); }
+  catch(e){ toast('พิมพ์ไม่ได้: '+e.message,'e'); }
+  setTimeout(function(){ document.body.classList.remove('printing'); }, 500);
+}
+function closePrintOverlay(){
+  var ov=document.getElementById('print-overlay');
+  if(ov){ ov.classList.remove('open'); document.getElementById('print-host').innerHTML=''; }
+  document.body.classList.remove('printing');
+  document.body.style.overflow='';
+  if(window._oldTitle){ document.title=window._oldTitle; window._oldTitle=null; }
 }
 
 function printDoc(d){
@@ -2104,29 +2131,7 @@ function printDoc(d){
   var reportHtml;
   try{reportHtml=buildReport(d);}
   catch(e){toast('เกิดข้อผิดพลาดในการสร้างรายงาน: '+e.message,'e');return;}
-  // ─── พิมพ์ในหน้าเดียวกัน (ไม่ใช้ window.open) ───
-  // เดิมใช้ popup + document.write ⇒ iOS Safari บล็อก ⇒ iPhone/iPad เปิดผลไม่ได้เลย
-  // วิธีนี้ใช้ได้ทุกเครื่อง และยัง "Save as PDF" ได้จากกล่องพิมพ์เหมือนเดิม
-  var host=document.getElementById('print-host');
-  if(!host){ host=document.createElement('div'); host.id='print-host'; document.body.appendChild(host); }
-  host.innerHTML=reportHtml;
-  var oldTitle=document.title;
-  document.title=suggestFilename(d);      // ใช้เป็นชื่อไฟล์ตอน Save as PDF
-  document.body.classList.add('printing');
-  var done=false;
-  function cleanup(){
-    if(done) return; done=true;
-    document.body.classList.remove('printing');
-    document.title=oldTitle;
-    host.innerHTML='';
-    window.removeEventListener('afterprint',cleanup);
-  }
-  window.addEventListener('afterprint',cleanup);
-  setTimeout(function(){
-    try{ window.print(); }
-    catch(e){ cleanup(); toast('เปิดหน้าพิมพ์ไม่ได้: '+e.message,'e'); }
-  },200);
-  setTimeout(cleanup,60000);   // สำรอง: iOS บางรุ่นไม่ยิง afterprint
+  printInPage(reportHtml, suggestFilename(d));
 }
 
 // ─── SAVE & PRINT ─────────────────────────────────
@@ -2161,7 +2166,7 @@ async function saveAndPrint(){
     });
     renderRec();
     clearForm();
-    setTimeout(function(){printDoc(d)},350);
+    printDoc(d);   // เปิดตัวอย่างทันที — ผู้ใช้กดปุ่มพิมพ์เอง (iOS บล็อกการสั่งพิมพ์อัตโนมัติ)
     return;
   }
   // ── โหมดเพิ่มใหม่ ──
@@ -2178,7 +2183,7 @@ async function saveAndPrint(){
     if(ok){ toast('✅ ซิงค์ No.'+d.cyto+' ขึ้น Cloud แล้ว','i',2500); }
     else { warnUnsynced(d.cyto); }
   });
-  setTimeout(function(){printDoc(d)},350);
+  printDoc(d);   // เปิดตัวอย่างทันที — ผู้ใช้กดปุ่มพิมพ์เอง (iOS บล็อกการสั่งพิมพ์อัตโนมัติ)
   clearForm();
   // เคอร์เซอร์เด้งไปรอที่ช่องชื่อ-สกุล พร้อมกรอกรายต่อไปทันที
   window.scrollTo(0,0);
@@ -2586,7 +2591,7 @@ function printBatch(){
     'div[style*="page-break-after"]:last-child{page-break-after:avoid!important}'+
     '</style>'+
     '</head><body>'+pages+
-    '<scr'+'ipt>window.onload=function(){setTimeout(function(){window.print();},400);}<\/scr'+'ipt></body></html>';
+    '</body></html>';
   printInPage(html,'CYTO Batch Print');
   toast('เปิดหน้าพิมพ์ '+selected.length+' ใบ');
 }
@@ -2731,7 +2736,7 @@ function printBilling(){
     '<h2>สรุปค่าตรวจ — '+rangeLabel+'</h2>'+
     '<div style="font-size:10pt;color:#555;margin:-6px 0 10px">เรียงตามวันที่เก็บส่งตรวจ</div>'+
     '<div>'+grand+'</div><div>'+clinics+'</div>'+
-    '<scr'+'ipt>window.onload=function(){setTimeout(function(){window.print();},300);}<\/scr'+'ipt></body></html>';
+    '</body></html>';
   printInPage(html,'สรุปค่าตรวจ '+rangeLabel);
 }
 function initBillingPage(){
@@ -3366,7 +3371,7 @@ function exportInvoice(){
         '<div class="meta">'+CFG.nth+' ('+CFG.nen+')<br>'+
         'ออกวันที่: '+new Date().toLocaleDateString('th-TH',{year:'numeric',month:'long',day:'numeric'})+'</div>'+
       '</div>'+
-      '<button onclick="window.print()" style="background:#1a3a6e;color:#fff;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px">🖨️ พิมพ์</button>'+
+      '<button onclick="window.print()" class="no-print" style="background:#1a3a6e;color:#fff;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px">🖨️ พิมพ์</button>'+
     '</div>'+
     '<div style="background:#f0f4ff;border-left:4px solid #1a3a6e;padding:12px 16px;margin-bottom:20px;border-radius:0 8px 8px 0">'+
       '<div style="font-size:16px;font-weight:800;color:#1a3a6e">'+eh(cSel)+'</div>'+
@@ -3399,7 +3404,7 @@ function exportInvoice(){
     '</div>'+
     '<div style="margin-top:40px;text-align:right;font-size:12px;color:#999">CytoPAP System — '+CFG.nth+'</div>'+
     '</body></html>';
-  printInPage(html,'QR Codes - CytoPAP');
+  printInPage(html,'ใบแจ้งหนี้ '+cSel+' '+periodLabel);
   toast('เปิดใบแจ้งหนี้ '+cSel+' แล้วครับ ✅');
 }
 
