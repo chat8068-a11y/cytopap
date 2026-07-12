@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap" rel="stylesheet">
-<title>CytoPAP System v74 — Cervical Cytology Lab Management</title>
+<title>CytoPAP System v75 — Cervical Cytology Lab Management</title>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
 <style>
@@ -254,7 +254,7 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
         <div class="sub">Cervical Cytology<br>Lab Management</div>
       </div>
     </div>
-    <span class="ver" id="ver-badge">v74 — Bethesda 2001 / 2014 🔒</span>
+    <span class="ver" id="ver-badge">v75 — Bethesda 2001 / 2014 🔒</span>
   </div>
   <nav class="nav">
     <button class="nav-btn active" onclick="showPage('form')" id="nb-form">
@@ -277,6 +277,10 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
       สถิติ & กราฟ
     </button>
+    <button class="nav-btn" onclick="showPage('audit')" id="nb-audit">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+      ตรวจสอบข้อมูล
+    </button>
     <button class="nav-btn" onclick="showPage('settings')" id="nb-settings">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
       ตั้งค่าระบบ
@@ -289,7 +293,7 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
 <div class="sb-foot">
     <div>ThinPrep PAP / SurePath</div>
     <div>HPV DNA Genotype Testing</div>
-    <div style="margin-top:6px;opacity:.4" id="ver-foot">v74 — CytoPAP System</div>
+    <div style="margin-top:6px;opacity:.4" id="ver-foot">v75 — CytoPAP System</div>
   </div>
 </aside>
 
@@ -1041,6 +1045,49 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
 </div>
 
 <!-- ── PAGE: SETTINGS ── -->
+<div id="page-audit" class="page">
+  <h1 class="page-title">🔍 ตรวจสอบข้อมูล</h1>
+  <p class="page-sub">ตรวจสุขภาพข้อมูล และประวัติการแก้ไขทั้งหมด</p>
+
+  <div class="card" style="border:2px solid #1a3a6e">
+    <div class="card-head" style="background:#e8eefc">
+      <span style="color:#1a3a6e">🩺 ตรวจสุขภาพข้อมูล</span>
+    </div>
+    <div class="card-body">
+      <div style="font-size:13px;color:#44506b;margin-bottom:12px;line-height:1.8">
+        สแกนหาความผิดปกติที่อาจซ่อนอยู่ — ผลตรวจที่ไม่ได้สั่ง · เลข CYTO ซ้ำ · ข้อมูลไม่ครบ
+      </div>
+      <button class="btn btn-primary" onclick="renderIntegrity()">🔍 เริ่มตรวจสอบ</button>
+      <div id="integrity-result" style="margin-top:14px"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><span>📋 ประวัติการแก้ไข (Audit Log)</span></div>
+    <div class="card-body">
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
+        <strong id="audit-count" style="color:#1a3a6e;font-size:14px">—</strong>
+        <div style="flex:1"></div>
+        <button class="btn btn-success btn-sm" onclick="exportAudit()">📊 Export Excel</button>
+      </div>
+      <input id="audit-q" placeholder="ค้นหา CYTO No., ชื่อ, ผู้ใช้..." oninput="renderAudit()" style="width:100%;padding:10px 14px;border:1.5px solid #d0d9ee;border-radius:10px;font-size:14px;font-family:inherit;margin-bottom:10px;box-sizing:border-box">
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse">
+          <thead><tr style="background:#f0f4f8">
+            <th style="padding:9px;text-align:left;font-size:12px;color:#44506b">เวลา</th>
+            <th style="padding:9px;text-align:left;font-size:12px;color:#44506b">การกระทำ</th>
+            <th style="padding:9px;text-align:left;font-size:12px;color:#44506b">CYTO</th>
+            <th style="padding:9px;text-align:left;font-size:12px;color:#44506b">ชื่อผู้ป่วย</th>
+            <th style="padding:9px;text-align:left;font-size:12px;color:#44506b">ผู้ใช้ / รายละเอียด</th>
+          </tr></thead>
+          <tbody id="audit-body"></tbody>
+        </table>
+      </div>
+      <div style="font-size:11.5px;color:#93a1bb;margin-top:8px">แสดง 300 รายการล่าสุด · เก็บสูงสุด 2,000 · ซิงค์ข้ามเครื่องผ่าน Firebase</div>
+    </div>
+  </div>
+</div>
+
 <div id="page-settings" class="page">
   <div class="page-title">ตั้งค่าระบบ</div>
   <div class="page-sub">ข้อมูลห้องแล็บ, รายชื่อคลินิก, และเจ้าหน้าที่ค่าเริ่มต้น</div>
@@ -1278,7 +1325,7 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
 // ══════════════════════════════════════════════════
 // CytoPAP System — JSONBin Cloud Sync Edition
 // ══════════════════════════════════════════════════
-var APP_VERSION = 'v74';   // ⬅️ แก้เลขเวอร์ชันที่นี่ที่เดียว — จุดอื่นอัปเดตตามอัตโนมัติ
+var APP_VERSION = 'v75';   // ⬅️ แก้เลขเวอร์ชันที่นี่ที่เดียว — จุดอื่นอัปเดตตามอัตโนมัติ
 document.addEventListener('DOMContentLoaded', function(){
   try{
     document.title = document.title.replace(/v\d+/, APP_VERSION);
@@ -1375,6 +1422,181 @@ function setSyncStatus(ok, msg){
   if(txt) txt.textContent = msg;
 }
 
+// ═══ AUDIT LOG — ใครแก้อะไรเมื่อไหร่ (สำคัญสำหรับแล็บการแพทย์) ═══════
+var AUDIT = [];
+var AUDIT_MAX = 2000;   // เก็บ 2000 รายการล่าสุด กันข้อมูลบวมเกินไป
+
+function currentUser(){
+  try{
+    if(window._isAnon) return 'คลินิก (anonymous)';
+    if(window._urlClinic) return 'คลินิก: '+decodeURIComponent(window._urlClinic);
+    var u = (window.firebaseAuth && window.firebaseAuth.currentUser) ? window.firebaseAuth.currentUser.email : null;
+    return u || 'ไม่ระบุ';
+  }catch(e){ return 'ไม่ระบุ'; }
+}
+function auditLog(action, rec, detail){
+  try{
+    AUDIT.unshift({
+      ts: new Date().toISOString(),
+      user: currentUser(),
+      action: action,                         // create | edit | delete | restore
+      cyto: (rec && rec.cyto) || '',
+      name: (rec && rec.name) || '',
+      rid:  (rec && rec._id) || '',
+      detail: detail || ''
+    });
+    if(AUDIT.length > AUDIT_MAX) AUDIT = AUDIT.slice(0, AUDIT_MAX);
+    localStorage.setItem('cp_audit', JSON.stringify(AUDIT));
+  }catch(e){}
+}
+function loadAudit(){
+  try{ AUDIT = JSON.parse(localStorage.getItem('cp_audit')||'[]') || []; }catch(e){ AUDIT = []; }
+}
+// รวม audit จากหลายเครื่อง (คีย์ = เวลา+ผู้ใช้+รายการ)
+function mergeAudit(cloudAudit){
+  if(!Array.isArray(cloudAudit) || !cloudAudit.length) return;
+  var seen = {};
+  AUDIT.concat(cloudAudit).forEach(function(a){
+    if(!a || !a.ts) return;
+    seen[a.ts+'|'+(a.user||'')+'|'+(a.rid||'')+'|'+(a.action||'')] = a;
+  });
+  AUDIT = Object.keys(seen).map(function(k){ return seen[k]; })
+              .sort(function(x,y){ return x.ts < y.ts ? 1 : -1; })
+              .slice(0, AUDIT_MAX);
+  try{ localStorage.setItem('cp_audit', JSON.stringify(AUDIT)); }catch(e){}
+}
+function renderAudit(){
+  var box = document.getElementById('audit-body');
+  if(!box) return;
+  var q = ((document.getElementById('audit-q')||{}).value||'').trim().toLowerCase();
+  var list = AUDIT.filter(function(a){
+    if(!q) return true;
+    return ((a.cyto||'')+' '+(a.name||'')+' '+(a.user||'')+' '+(a.action||'')).toLowerCase().indexOf(q)!==-1;
+  });
+  var cntEl=document.getElementById('audit-count');
+  if(cntEl) cntEl.textContent='รวม '+list.length+' รายการ'+(q?' (กรองจาก '+AUDIT.length+')':'');
+  if(!list.length){ box.innerHTML='<tr><td colspan="5" style="padding:20px;text-align:center;color:#6b7a99">ยังไม่มีประวัติการแก้ไข</td></tr>'; return; }
+  var AC={create:['เพิ่มใหม่','#1a7a3c','#EAF3DE'],edit:['แก้ไข','#9a6700','#fff8e6'],
+          "delete":['ลบ','#c0392b','#fdecea'],restore:['กู้คืน','#1a3a6e','#e8eefc']};
+  box.innerHTML = list.slice(0,300).map(function(a){
+    var d = new Date(a.ts);
+    var t = isNaN(d) ? eh(a.ts) : d.toLocaleString('th-TH',{dateStyle:'short',timeStyle:'medium'});
+    var m = AC[a.action] || [a.action||'-','#6b7a99','#f0f4f8'];
+    return '<tr>'+
+      '<td style="font-size:12px;white-space:nowrap">'+eh(t)+'</td>'+
+      '<td><span style="background:'+m[2]+';color:'+m[1]+';font-weight:700;font-size:11px;padding:3px 9px;border-radius:20px">'+eh(m[0])+'</span></td>'+
+      '<td><strong>'+eh(a.cyto||'—')+'</strong></td>'+
+      '<td style="font-size:13px">'+eh(a.name||'—')+'</td>'+
+      '<td style="font-size:12px;color:#6b7a99">'+eh(a.user||'—')+'<div style="font-size:11px;color:#93a1bb">'+eh(a.detail||'')+'</div></td>'+
+    '</tr>';
+  }).join('');
+}
+function exportAudit(){
+  if(typeof XLSX==='undefined'){toast('กำลังโหลด XLSX...','e');return;}
+  if(!AUDIT.length){toast('ยังไม่มีประวัติ','e');return;}
+  var rows=[['เวลา','การกระทำ','CYTO No.','ชื่อผู้ป่วย','ผู้ใช้','รายละเอียด']];
+  AUDIT.forEach(function(a){
+    var d=new Date(a.ts);
+    rows.push([isNaN(d)?a.ts:d.toLocaleString('th-TH'), a.action||'', a.cyto||'', a.name||'', a.user||'', a.detail||'']);
+  });
+  var wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), 'AuditLog');
+  XLSX.writeFile(wb,'CytoPAP_AuditLog_'+new Date().toISOString().slice(0,10)+'.xlsx');
+  toast('Export ประวัติการแก้ไขแล้ว ✅');
+}
+
+// ═══ ตรวจสุขภาพข้อมูล (Data Integrity Check) ═══════════════════════
+// สแกนหาข้อมูลผิดปกติที่อาจซ่อนอยู่ — เกิดจากบทเรียน CYTO 759
+function runIntegrityCheck(){
+  var issues = { hpvOnlyWithPap:[], papOnlyWithHpv:[], dupCyto:[], noDate:[], noClinic:[], noPrice:[], noCyto:[] };
+
+  // 1) สั่ง HPV อย่างเดียว แต่มีค่า PAP ค้างอยู่ (บั๊ก 759)
+  // 2) สั่ง PAP อย่างเดียว แต่มีผล HPV ค้างอยู่ (บั๊กฝาแฝด)
+  REC.forEach(function(r){
+    var def = examDefOf(r);
+    if(!def.hasPap && r.examType!=='biopsy' && (r.cat || r.adq || r.sqm)) issues.hpvOnlyWithPap.push(r);
+    if(!def.hasHpv && (r.hi==='yes' || r.hr)) issues.papOnlyWithHpv.push(r);
+    if(!r.dc && !r.dr) issues.noDate.push(r);
+    if(!(r.clinic||'').trim()) issues.noClinic.push(r);
+    if(!r.price || parseFloat(r.price)<=0) issues.noPrice.push(r);
+    if(!r.cyto) issues.noCyto.push(r);
+  });
+
+  // 3) เลข CYTO ซ้ำ (M3 — เกิดได้เมื่อ 2 เครื่องบันทึกพร้อมกัน)
+  var byCyto={};
+  REC.forEach(function(r){ if(!r.cyto) return; var k=String(r.cyto); (byCyto[k]=byCyto[k]||[]).push(r); });
+  Object.keys(byCyto).forEach(function(k){ if(byCyto[k].length>1) issues.dupCyto.push({cyto:k, recs:byCyto[k]}); });
+
+  return issues;
+}
+function renderIntegrity(){
+  var box=document.getElementById('integrity-result');
+  if(!box) return;
+  var I=runIntegrityCheck();
+  var total = I.hpvOnlyWithPap.length + I.papOnlyWithHpv.length + I.dupCyto.length +
+              I.noDate.length + I.noClinic.length + I.noPrice.length + I.noCyto.length;
+  function names(arr,n){ return arr.slice(0,n||8).map(function(r){return 'No.'+eh(r.cyto||'-')+' '+eh(r.name||'-');}).join(' · ') + (arr.length>(n||8)?' … และอีก '+(arr.length-(n||8))+' ราย':''); }
+  function card(sev,title,cnt,desc,detail){
+    if(!cnt) return '';
+    var c = sev==='high'?['#c0392b','#fdecea']:sev==='mid'?['#9a6700','#fff8e6']:['#6b7a99','#f0f4f8'];
+    return '<div style="border-left:5px solid '+c[0]+';background:'+c[1]+';padding:12px 14px;border-radius:8px;margin-bottom:10px">'+
+      '<div style="font-weight:800;color:'+c[0]+';font-size:14px">'+title+' — <span style="font-size:17px">'+cnt+'</span> รายการ</div>'+
+      '<div style="font-size:12.5px;color:#44506b;margin-top:3px">'+desc+'</div>'+
+      (detail?'<div style="font-size:12px;color:#6b7a99;margin-top:6px;line-height:1.7">'+detail+'</div>':'')+
+    '</div>';
+  }
+  var html='';
+  if(total===0){
+    html='<div style="background:#EAF3DE;border:2px solid #1a7a3c;border-radius:10px;padding:22px;text-align:center">'+
+      '<div style="font-size:34px">✅</div>'+
+      '<div style="font-weight:800;color:#1a7a3c;font-size:17px;margin-top:6px">ข้อมูลสมบูรณ์</div>'+
+      '<div style="font-size:13px;color:#44506b;margin-top:4px">ตรวจ '+REC.length+' รายการ ไม่พบความผิดปกติ</div></div>';
+  } else {
+    html='<div style="font-size:13px;color:#6b7a99;margin-bottom:12px">ตรวจ <strong>'+REC.length+'</strong> รายการ — พบ <strong style="color:#c0392b">'+total+'</strong> จุดที่ควรตรวจสอบ</div>';
+    html+=card('high','🔴 สั่ง HPV อย่างเดียว แต่มีผล PAP ค้างอยู่', I.hpvOnlyWithPap.length,
+      'ผลตรวจทางคลินิกผิด — v74 ไม่แสดงผลนี้แล้ว แต่ค่ายังค้างในฐานข้อมูล', names(I.hpvOnlyWithPap));
+    html+=card('high','🔴 สั่ง PAP อย่างเดียว แต่มีผล HPV ค้างอยู่', I.papOnlyWithHpv.length,
+      'อาจเป็นผล HPV ของคนไข้รายก่อนที่ค้างมาจากโหมดกรอกเร็ว', names(I.papOnlyWithHpv));
+    html+=card('high','🔴 เลข CYTO ซ้ำ', I.dupCyto.length,
+      'เกิดได้เมื่อ 2 เครื่องบันทึกพร้อมกัน — ต้องแก้ให้ไม่ซ้ำด้วยมือ',
+      I.dupCyto.slice(0,10).map(function(d){ return 'No.'+eh(d.cyto)+' → '+d.recs.map(function(r){return eh(r.name||'-');}).join(' / '); }).join('<br>'));
+    html+=card('mid','🟠 ไม่มีวันที่', I.noDate.length, 'จะไม่ปรากฏในสรุปค่าตรวจรายเดือนและใบแจ้งหนี้', names(I.noDate));
+    html+=card('mid','🟠 ไม่มีชื่อคลินิก', I.noClinic.length, 'จะถูกจัดเป็น "(ไม่ระบุคลินิก)" ในใบแจ้งหนี้', names(I.noClinic));
+    html+=card('low','🟡 ไม่มีราคา', I.noPrice.length, 'ยอดในใบแจ้งหนี้จะขาดไป', names(I.noPrice));
+    html+=card('low','🟡 ไม่มีเลข CYTO', I.noCyto.length, 'ค้นหาและอ้างอิงไม่ได้', names(I.noCyto));
+    if(I.hpvOnlyWithPap.length || I.papOnlyWithHpv.length){
+      html+='<button class="btn btn-danger" onclick="cleanupBadResults()" style="margin-top:6px">🧹 ล้างผลตรวจที่ไม่ได้สั่ง ('+(I.hpvOnlyWithPap.length+I.papOnlyWithHpv.length)+' รายการ)</button>'+
+            '<div style="font-size:11.5px;color:#6b7a99;margin-top:6px">ระบบจะดาวน์โหลด Backup ให้อัตโนมัติก่อนล้าง</div>';
+    }
+  }
+  box.innerHTML=html;
+}
+// ล้างค่าผลตรวจที่ไม่ได้สั่ง — มี backup อัตโนมัติก่อนเสมอ
+async function cleanupBadResults(){
+  var I=runIntegrityCheck();
+  var n=I.hpvOnlyWithPap.length+I.papOnlyWithHpv.length;
+  if(!n){ toast('ไม่มีข้อมูลที่ต้องล้าง'); return; }
+  if(!confirm('จะล้างผลตรวจที่ไม่ได้สั่งใน '+n+' รายการ\n\n• HPV อย่างเดียว → ลบค่า PAP ที่ค้าง\n• PAP อย่างเดียว → ลบผล HPV ที่ค้าง\n\nระบบจะดาวน์โหลด Backup ให้ก่อน\nยืนยันหรือไม่?')) return;
+  try{ downloadBackup(true); }catch(e){}
+  var fixed=0;
+  I.hpvOnlyWithPap.forEach(function(r){
+    r.cat=''; r.adq=''; r.tz=''; r.sqm=''; r.sqmBase='';
+    r.orgs=[]; r.orgsEpi=[]; r.nnv=[]; r.rcc=[]; r.lsilSubs=[]; r.hsilSubs=[];
+    fixed++;
+  });
+  I.papOnlyWithHpv.forEach(function(r){
+    r.hi='no'; r.hr=''; r.hkit=''; r.hmth=''; r.gln='';
+    r.hrGenos=[]; r.lrGenos=[]; r.phrGenos=[];
+    fixed++;
+  });
+  saveLocal();
+  auditLog('edit', {cyto:'-',name:'(ล้างข้อมูล)'}, 'ล้างผลตรวจที่ไม่ได้สั่ง '+fixed+' รายการ');
+  var ok=await pushToJb();
+  renderRec(); renderIntegrity();
+  toast(ok ? ('✅ ล้างแล้ว '+fixed+' รายการ และซิงค์ขึ้น Cloud') : ('ล้างในเครื่องแล้ว '+fixed+' รายการ แต่ยังไม่ได้ซิงค์'), ok?'i':'e', 6000);
+  if(!ok) setPending(true);
+}
+
 async function pushToJb(){
   try{
     // ป้องกันการ push clinics ว่าง — ถ้า clinics ว่างไม่ให้ push cfg.clinics
@@ -1390,6 +1612,7 @@ async function pushToJb(){
         nth: CFG.nth, nen: CFG.nen,
         footer: CFG.footer
       },
+      audit: AUDIT.slice(0, 500),   // ประวัติการแก้ไข — ซิงค์ข้ามเครื่อง
       version: Date.now()
     };
     var res = await fetch(fbPath(false), {
@@ -1412,6 +1635,7 @@ async function pullFromJb(silent){
     var res = await fetch(fbPath(true));
     if(!res.ok) throw new Error('HTTP '+res.status);
     var data = await res.json();
+    if(data && data.audit) mergeAudit(data.audit);
     if(data && data.records){
       REC = data.records;
       if(data.cfg){
@@ -1847,11 +2071,15 @@ async function saveQuickEdit(){
   rec._editedAt=new Date().toISOString();
   REC[idx]=rec;
   saveLocal();
+  auditLog('edit', rec, 'แก้ไขด่วน: '+changed.join(', '));
   renderRec();
   closeQuickEdit();
   toast('บันทึกการแก้ไขแล้ว — '+changed.join(', ')+' ✅');
-  // sync ขึ้น Firebase
-  try{ await pushToJb(); }catch(e){ console.warn('push failed',e); }
+  // sync ขึ้น Firebase — ถ้าไม่สำเร็จต้องเตือน ไม่ใช่เงียบ
+  try{
+    var _ok=await pushToJb();
+    if(!_ok) warnUnsynced(rec.cyto||'-');
+  }catch(e){ warnUnsynced(rec.cyto||'-'); }
 }
 function quickEditToFull(){
   var id=window._qeId;
@@ -2187,6 +2415,16 @@ async function saveAndPrint(){
       window._editingId=null; return;
     }
     var orig=REC[idx];
+    // M5: โหมดแก้ไขเดิม "ไม่เช็คเลข CYTO ซ้ำ" → แก้เลขให้ชนกับรายการอื่นได้เงียบๆ
+    var _dupE=REC.find(function(r){ return String(r.cyto)===String(d.cyto) && String(r._id)!==String(orig._id); });
+    if(_dupE){
+      if(!confirm('⚠️ CYTO No. '+d.cyto+' ซ้ำกับรายการอื่นในระบบ\n(คนไข้: '+(_dupE.name||'-')+')\n\nยืนยันบันทึกด้วยเลขซ้ำหรือไม่?')) return;
+    }
+    // เก็บรายการที่เปลี่ยนไว้ลง Audit Log
+    var _chg=[];
+    ['cyto','name','age','clinic','dc','dr','price','cat','hr','examType'].forEach(function(k){
+      if(String(orig[k]||'')!==String(d[k]||'')) _chg.push(k+': "'+(orig[k]||'-')+'" → "'+(d[k]||'-')+'"');
+    });
     // คงค่าเดิมที่ไม่ได้อยู่ในฟอร์ม + เก็บประวัติ
     d._id=orig._id||genId();
     d.id=orig.id||Date.now();
@@ -2194,6 +2432,7 @@ async function saveAndPrint(){
     d.editedAt=new Date().toISOString();
     d.editCount=(orig.editCount||0)+1;
     REC[idx]=d; saveLocal();
+    auditLog('edit', d, _chg.length?_chg.join(' · '):'(ไม่มีการเปลี่ยนแปลงหลัก)');
     var editedCyto=d.cyto;
     window._editingId=null;
     var banner=document.getElementById('edit-banner'); if(banner) banner.style.display='none';
@@ -2282,6 +2521,18 @@ async function mergeAndPush(){
         var merged = Object.keys(map).map(function(k){ return map[k]; });
         merged.sort(function(a,b){ return (parseInt(b.cyto)||0)-(parseInt(a.cyto)||0); });
         REC = merged; saveLocal();
+        // M3: 2 เครื่องอาจได้เลข CYTO เดียวกันถ้าบันทึกพร้อมกันตอนออฟไลน์ → ตรวจหลัง merge
+        var seenC={}, dups=[];
+        REC.forEach(function(r){
+          if(!r.cyto) return;
+          var k=String(r.cyto);
+          if(seenC[k]) { if(dups.indexOf(k)===-1) dups.push(k); }
+          seenC[k]=true;
+        });
+        if(dups.length){
+          toast('⚠️ พบเลข CYTO ซ้ำหลังซิงค์: '+dups.slice(0,5).join(', ')+(dups.length>5?' …':'')+
+                ' — ดูที่เมนู "ตรวจสอบข้อมูล"','e',12000);
+        }
       }
     }
   }catch(e){ /* ดึง Cloud ไม่ได้ → push ตรงไปเลย */ }
@@ -2585,9 +2836,11 @@ async function deleteRec(id){
   // เก็บสำเนาไว้ก่อน — ถ้าซิงค์ขึ้น cloud ไม่สำเร็จ ให้ย้อนคืน (กันข้อมูลในเครื่องเพี้ยนไม่ตรง cloud)
   var _removed=REC[idx], _wasOnline=syncOnline;
   REC.splice(idx,1); saveLocal();
+  auditLog('delete', _removed, 'ลบรายการ');
   await pushToJb();
   if(!syncOnline && _wasOnline){
     REC.splice(idx,0,_removed); saveLocal(); renderRec(); updateNextNo();
+    auditLog('restore', _removed, 'ลบไม่สำเร็จ — คืนข้อมูลกลับอัตโนมัติ');
     toast('ลบไม่สำเร็จ — ซิงค์ขึ้น Cloud ไม่ได้ ข้อมูลถูกคืนกลับแล้ว','e',6000);
     return;
   }
@@ -3052,6 +3305,7 @@ function showPage(p){
   document.getElementById('page-'+p).classList.add('active');
   document.querySelectorAll('.nav-btn').forEach(function(b){b.classList.remove('active')});
   document.getElementById('nb-'+p).classList.add('active');
+  if(p==='audit'){ renderAudit(); renderIntegrity(); }
   if(p==='records'){ var rq=document.getElementById('rec-q'); if(rq) rq.value=''; renderRec(); populateBatchNew(); } if(p==='batch'){ document.getElementById('batch-list').style.display='none'; document.getElementById('batch-empty').style.display='none'; }
   if(p==='settings') loadSettings();
   if(p==='form' && !window._editingId){ var _fc=document.getElementById('f-cyto'); if(_fc && !_fc.value) _fc.value=getNextNo(); var _fnm=document.getElementById('f-name'); if(_fnm && !_fnm.value.trim()) _fnm.value='คุณ '; updateLotBanner(); }
@@ -3748,6 +4002,7 @@ document.addEventListener('keydown',function(e){
 loadData();
 fillClinicSelect();
 fillDefaultStaff();
+loadAudit();
 setupPills();
 
 // ตอนเปิดแอป: ถ้ารอบก่อนบันทึกตอนออฟไลน์ไว้ → เตือนและซิงค์ให้อัตโนมัติ
