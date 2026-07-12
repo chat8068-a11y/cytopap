@@ -233,7 +233,7 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
         <div class="sub">Cervical Cytology<br>Lab Management</div>
       </div>
     </div>
-    <span class="ver">v66 — Bethesda 2001 / 2014 🔒</span>
+    <span class="ver" id="ver-badge">v69 — Bethesda 2001 / 2014 🔒</span>
   </div>
   <nav class="nav">
     <button class="nav-btn active" onclick="showPage('form')" id="nb-form">
@@ -268,7 +268,7 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
 <div class="sb-foot">
     <div>ThinPrep PAP / SurePath</div>
     <div>HPV DNA Genotype Testing</div>
-    <div style="margin-top:6px;opacity:.4">v36 — CytoPAP System</div>
+    <div style="margin-top:6px;opacity:.4" id="ver-foot">v69 — CytoPAP System</div>
   </div>
 </aside>
 
@@ -1252,6 +1252,14 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
 // ══════════════════════════════════════════════════
 // CytoPAP System — JSONBin Cloud Sync Edition
 // ══════════════════════════════════════════════════
+var APP_VERSION = 'v69';   // ⬅️ แก้เลขเวอร์ชันที่นี่ที่เดียว — จุดอื่นอัปเดตตามอัตโนมัติ
+document.addEventListener('DOMContentLoaded', function(){
+  try{
+    document.title = document.title.replace(/v\d+/, APP_VERSION);
+    var b=document.getElementById('ver-badge'); if(b) b.textContent = APP_VERSION+' — Bethesda 2001 / 2014 🔒';
+    var f=document.getElementById('ver-foot');  if(f) f.textContent = APP_VERSION+' — CytoPAP System';
+  }catch(e){}
+});
 var REC = [], CFG = {};
 // L4: โลโก้เก็บครั้งเดียว แล้วอ่านซ้ำจาก <img> บนหน้า (เดิมเก็บ base64 180KB ซ้ำ 2 ที่ = ไฟล์บวม)
 var LOGO_URI = (function(){ var e=document.querySelector('img[src^="data:image"]'); return e ? e.src : ''; })();
