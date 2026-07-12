@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap" rel="stylesheet">
-<title>CytoPAP System v77 — Cervical Cytology Lab Management</title>
+<title>CytoPAP System v78 — Cervical Cytology Lab Management</title>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
 <style>
@@ -254,7 +254,7 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
         <div class="sub">Cervical Cytology<br>Lab Management</div>
       </div>
     </div>
-    <span class="ver" id="ver-badge">v77 — Bethesda 2001 / 2014 🔒</span>
+    <span class="ver" id="ver-badge">v78 — Bethesda 2001 / 2014 🔒</span>
   </div>
   <nav class="nav">
     <button class="nav-btn active" onclick="showPage('form')" id="nb-form">
@@ -293,7 +293,7 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
 <div class="sb-foot">
     <div>ThinPrep PAP / SurePath</div>
     <div>HPV DNA Genotype Testing</div>
-    <div style="margin-top:6px;opacity:.4" id="ver-foot">v77 — CytoPAP System</div>
+    <div style="margin-top:6px;opacity:.4" id="ver-foot">v78 — CytoPAP System</div>
   </div>
 </aside>
 
@@ -1049,6 +1049,11 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
   <h1 class="page-title">🔍 ตรวจสอบข้อมูล</h1>
   <p class="page-sub">ตรวจสุขภาพข้อมูล และประวัติการแก้ไขทั้งหมด</p>
 
+  <div class="card">
+    <div class="card-head"><span>💾 พื้นที่จัดเก็บ</span></div>
+    <div class="card-body"><div id="storage-meter"></div></div>
+  </div>
+
   <div class="card" style="border:2px solid #1a3a6e">
     <div class="card-head" style="background:#e8eefc">
       <span style="color:#1a3a6e">🩺 ตรวจสุขภาพข้อมูล</span>
@@ -1325,7 +1330,7 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
 // ══════════════════════════════════════════════════
 // CytoPAP System — JSONBin Cloud Sync Edition
 // ══════════════════════════════════════════════════
-var APP_VERSION = 'v77';   // ⬅️ แก้เลขเวอร์ชันที่นี่ที่เดียว — จุดอื่นอัปเดตตามอัตโนมัติ
+var APP_VERSION = 'v78';   // ⬅️ แก้เลขเวอร์ชันที่นี่ที่เดียว — จุดอื่นอัปเดตตามอัตโนมัติ
 document.addEventListener('DOMContentLoaded', function(){
   try{
     document.title = document.title.replace(/v\d+/, APP_VERSION);
@@ -1369,15 +1374,30 @@ function fbPath(withT){
 // ─── LOCAL STORAGE ────────────────────────────────
 function loadData(){
   try{
-    var allRec = ['cp5_rec','cp7_rec','cy3_r','cy_rec'].map(function(k){
+    // อ่านทุกคีย์เก่าเพื่อ "ย้ายข้อมูล" ครั้งเดียว แล้วเลิกใช้ (เดิมเก็บซ้ำหลายคีย์ = เปลืองพื้นที่ 2 เท่า)
+    var allRec = ['cp7_rec','cp5_rec','cy3_r','cy_rec'].map(function(k){
       try{return JSON.parse(localStorage.getItem(k)||'[]');}catch(e){return [];}
     });
-    REC = allRec.reduce(function(a,b){return b.length>a.length?b:a;},[]);
-    localStorage.setItem('cp5_rec',JSON.stringify(REC));
-    localStorage.setItem('cp7_rec',JSON.stringify(REC));
+    // M4: เดิมเลือก "อาร์เรย์ที่ยาวที่สุด" → อาจหยิบชุดเก่าที่ยาวกว่ามาใช้
+    // ใหม่: ถ้ามีข้อมูลเวลาบันทึก (savedAt) ให้ดูความสดใหม่ก่อน แล้วค่อยดูจำนวน
+    function freshness(a){
+      if(!a.length) return 0;
+      var mx=''; a.forEach(function(r){ var t=(r&&(r.savedAt||r.editedAt))||''; if(t>mx) mx=t; });
+      return mx;
+    }
+    REC = allRec.reduce(function(best,cur){
+      if(!cur.length) return best;
+      if(!best.length) return cur;
+      var fb=freshness(best), fc=freshness(cur);
+      if(fb!==fc) return fc>fb ? cur : best;       // สดกว่าชนะ
+      return cur.length>best.length ? cur : best;  // เท่ากันค่อยดูจำนวน
+    },[]);
+    // เก็บคีย์เดียวจากนี้ไป + ลบคีย์เก่าทิ้งคืนพื้นที่
+    localStorage.setItem('cp7_rec',JSON.stringify(slimAll(REC)));
+    ['cp5_rec','cy3_r','cy_rec'].forEach(function(k){ try{localStorage.removeItem(k);}catch(e){} });
   }catch(e){ REC=[]; }
   try{
-    var cfgStr = localStorage.getItem('cp5_cfg')||localStorage.getItem('cp7_cfg')||localStorage.getItem('cy3_c')||'{}';
+    var cfgStr = localStorage.getItem('cp7_cfg')||localStorage.getItem('cp5_cfg')||localStorage.getItem('cy3_c')||'{}';
     CFG = JSON.parse(cfgStr);
   }catch(e){ CFG={} }
   // บันทึก clinics จาก localStorage ก่อน assign
@@ -1396,21 +1416,83 @@ function loadData(){
   // เป็นสาเหตุของข้อความ "HTTP 401: X-Master-Key is invalid" ที่เคยขึ้น
   if(CFG.jbKey!==undefined || CFG.jbBinId!==undefined){
     delete CFG.jbKey; delete CFG.jbBinId;
-    try{ ['cp5_cfg','cp7_cfg'].forEach(function(k){ localStorage.setItem(k, JSON.stringify(CFG)); }); }catch(e){}
+    try{ localStorage.setItem('cp7_cfg', JSON.stringify(CFG)); localStorage.removeItem('cp5_cfg'); }catch(e){}
   }
   // ถ้า clinics จาก localStorage ว่าง ให้คืนค่า default
   if(!savedClinics || !savedClinics.length){
     CFG.clinics = ['หมอกาญจน์กนก-หมออีรินพ','คลินิกเวชกรรม สุขภาพดี'];
   }
 }
+// ─── บีบขนาดข้อมูล: ตัดฟิลด์ว่างออกก่อนเก็บ/ส่ง (ประหยัด ~18%) ───
+// โค้ดทุกจุดเช็ค (r.xxx && r.xxx.length) อยู่แล้ว จึงตัดได้ปลอดภัย
+var _KEEP_ALWAYS = {_id:1, cyto:1, name:1, examType:1};
+function slimRec(r){
+  if(!r || typeof r!=='object') return r;
+  var o={};
+  for(var k in r){
+    if(!Object.prototype.hasOwnProperty.call(r,k)) continue;
+    var v=r[k];
+    if(_KEEP_ALWAYS[k]){ o[k]=v; continue; }
+    if(v===''||v===null||v===undefined||v===false) continue;
+    if(Array.isArray(v) && v.length===0) continue;
+    o[k]=v;
+  }
+  return o;
+}
+function slimAll(arr){ return (arr||[]).map(slimRec); }
+
+// ─── ตรวจพื้นที่ localStorage ───────────────────────────────────
+var LS_LIMIT = 5*1024*1024;   // เบราว์เซอร์ส่วนใหญ่ ~5 MB (iOS/Safari เข้มสุด)
+function lsUsage(){
+  var bytes=0;
+  try{
+    for(var i=0;i<localStorage.length;i++){
+      var k=localStorage.key(i);
+      bytes += (k.length + (localStorage.getItem(k)||'').length)*2;  // UTF-16
+    }
+  }catch(e){}
+  return { bytes:bytes, pct: Math.min(100, bytes/LS_LIMIT*100) };
+}
+
 function saveLocal(){
   try{
-    var rStr=JSON.stringify(REC); var cStr=JSON.stringify(CFG);
-    ['cp5_rec','cp7_rec'].forEach(function(k){localStorage.setItem(k,rStr);});
-    ['cp5_cfg','cp7_cfg'].forEach(function(k){localStorage.setItem(k,cStr);});
+    var rStr=JSON.stringify(slimAll(REC));
+    var cStr=JSON.stringify(CFG);
+    // เก็บคีย์เดียว (เดิมเก็บซ้ำ 2 คีย์ = กินพื้นที่ 2 เท่าโดยไม่จำเป็น)
+    localStorage.setItem('cp7_rec', rStr);
+    localStorage.setItem('cp7_cfg', cStr);
+    // ลบคีย์เก่าทิ้ง คืนพื้นที่ทันที
+    try{ localStorage.removeItem('cp5_rec'); localStorage.removeItem('cp5_cfg'); }catch(e){}
+    // เตือนเมื่อพื้นที่ใกล้เต็ม — เดิมเต็มแล้ว "พังเงียบ"
+    var u=lsUsage();
+    if(u.pct>=80) warnStorage(u);
   }catch(e){
-    console.warn('localStorage unavailable');
+    // โควตาเต็มจริง → ต้องเตือนดังๆ ไม่ใช่ console.warn เงียบๆ
+    var full = (e && (e.name==='QuotaExceededError' || e.code===22 || e.code===1014));
+    if(full){
+      warnStorage(lsUsage(), true);
+    } else {
+      console.warn('localStorage unavailable', e);
+    }
   }
+}
+function warnStorage(u, isFull){
+  var b=document.getElementById('storage-banner');
+  if(!b){
+    b=document.createElement('div');
+    b.id='storage-banner';
+    b.style.cssText='position:fixed;left:0;right:0;top:0;z-index:9999;padding:11px 16px;'+
+      'font-size:13.5px;font-weight:700;text-align:center;box-shadow:0 2px 12px rgba(0,0,0,.2)';
+    document.body.appendChild(b);
+  }
+  b.style.background = isFull ? '#c0392b' : '#dd9000';
+  b.style.color = '#fff';
+  b.innerHTML = (isFull
+      ? '🛑 พื้นที่ในเครื่องเต็ม! บันทึกลงเครื่องไม่ได้แล้ว — ข้อมูลบน Cloud ยังปลอดภัย'
+      : '⚠️ พื้นที่ในเครื่องใช้ไป '+u.pct.toFixed(0)+'% — ควรสำรองข้อมูลและเก็บข้อมูลเก่าออก')+
+    ' <button onclick="showPage(\'audit\')" style="margin-left:8px;padding:4px 12px;border-radius:6px;border:0;background:#fff;color:#c0392b;font-weight:800;cursor:pointer">ดูรายละเอียด</button>'+
+    ' <button onclick="this.parentNode.style.display=\'none\'" style="margin-left:4px;padding:4px 10px;border-radius:6px;border:1px solid rgba(255,255,255,.6);background:transparent;color:#fff;cursor:pointer">ปิด</button>';
+  b.style.display='block';
 }
 
 // ─── SYNC STATUS BAR ──────────────────────────────
@@ -1549,6 +1631,34 @@ function runIntegrityCheck(){
 
   return issues;
 }
+function renderStorageMeter(){
+  var box=document.getElementById('storage-meter');
+  if(!box) return;
+  var u=lsUsage();
+  var mb=(u.bytes/1024/1024);
+  var perRec = REC.length ? (u.bytes/REC.length) : 900;
+  var capacity = Math.floor(LS_LIMIT/perRec);
+  var remain = Math.max(0, capacity - REC.length);
+  var col = u.pct>=80 ? '#c0392b' : u.pct>=60 ? '#dd9000' : '#1a7a3c';
+  var bg  = u.pct>=80 ? '#fdecea' : u.pct>=60 ? '#fff8e6' : '#EAF3DE';
+  box.innerHTML =
+    '<div style="background:'+bg+';border-radius:10px;padding:14px 16px">'+
+      '<div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:6px">'+
+        '<strong style="color:'+col+';font-size:15px">พื้นที่ในเครื่อง (localStorage)</strong>'+
+        '<span style="color:'+col+';font-weight:800;font-size:15px">'+u.pct.toFixed(1)+'%</span>'+
+      '</div>'+
+      '<div style="background:#fff;border-radius:20px;height:11px;margin:9px 0;overflow:hidden">'+
+        '<div style="background:'+col+';height:100%;width:'+Math.min(100,u.pct)+'%;transition:width .4s"></div>'+
+      '</div>'+
+      '<div style="font-size:12.5px;color:#44506b;line-height:1.9">'+
+        'ใช้ไป <strong>'+mb.toFixed(2)+' MB</strong> จาก ~5 MB · เก็บอยู่ <strong>'+REC.length+'</strong> รายการ<br>'+
+        'เฉลี่ย <strong>'+(perRec/1024).toFixed(2)+' KB</strong>/รายการ · '+
+        'ประมาณเก็บได้อีก <strong style="color:'+col+'">'+remain.toLocaleString()+'</strong> รายการ (เพดาน ~'+capacity.toLocaleString()+')'+
+      '</div>'+
+      (u.pct>=60?'<div style="font-size:12px;color:'+col+';margin-top:7px;font-weight:700">⚠️ ควรสำรองข้อมูลและวางแผนเก็บข้อมูลเก่าออกได้แล้ว</div>':'')+
+      '<div style="font-size:11.5px;color:#6b7a99;margin-top:7px">ℹ️ ข้อมูลบน Firebase Cloud <strong>ไม่มีข้อจำกัดนี้</strong> (รองรับหลักแสนรายการ) — ตัวจำกัดคือพื้นที่ในเบราว์เซอร์เท่านั้น</div>'+
+    '</div>';
+}
 function renderIntegrity(){
   var box=document.getElementById('integrity-result');
   if(!box) return;
@@ -1658,7 +1768,7 @@ async function pushToJb(){
     // ป้องกันการ push clinics ว่าง — ถ้า clinics ว่างไม่ให้ push cfg.clinics
     var safeClinics = (CFG.clinics && CFG.clinics.length > 0) ? CFG.clinics : null;
     var payload = {
-      records: REC,
+      records: slimAll(REC),   // บีบขนาด — ตัดฟิลด์ว่างออก ประหยัด bandwidth ~18%
       cfg: {
         clinics: safeClinics !== null ? safeClinics : (CFG.clinics||[]),
         clinicEmails: CFG.clinicEmails||{},
@@ -1711,11 +1821,7 @@ async function pullFromJb(silent){
         if(c.nth) CFG.nth=c.nth; if(c.nen) CFG.nen=c.nen;
         if(c.footer) CFG.footer=c.footer;
       }
-      try{
-        var rStr=JSON.stringify(REC);
-        ['cp5_rec','cp7_rec'].forEach(function(k){localStorage.setItem(k,rStr);});
-      }catch(e){}
-      saveLocal();
+      saveLocal();   // เก็บคีย์เดียว (เดิมเขียนซ้ำ 2 คีย์ตรงนี้อีก)
       renderClinicEntries();
       fillClinicSelect();    // อัปเดต dropdown คลินิกในฟอร์มบันทึก
       fillDefaultStaff();    // อัปเดตชื่อเจ้าหน้าที่ในฟอร์ม
@@ -3370,7 +3476,7 @@ function showPage(p){
   document.getElementById('page-'+p).classList.add('active');
   document.querySelectorAll('.nav-btn').forEach(function(b){b.classList.remove('active')});
   document.getElementById('nb-'+p).classList.add('active');
-  if(p==='audit'){ renderAudit(); renderIntegrity(); }
+  if(p==='audit'){ renderStorageMeter(); renderAudit(); renderIntegrity(); }
   if(p==='records'){ var rq=document.getElementById('rec-q'); if(rq) rq.value=''; renderRec(); populateBatchNew(); } if(p==='batch'){ document.getElementById('batch-list').style.display='none'; document.getElementById('batch-empty').style.display='none'; }
   if(p==='settings') loadSettings();
   if(p==='form' && !window._editingId){ var _fc=document.getElementById('f-cyto'); if(_fc && !_fc.value) _fc.value=getNextNo(); var _fnm=document.getElementById('f-name'); if(_fnm && !_fnm.value.trim()) _fnm.value='คุณ '; updateLotBanner(); }
