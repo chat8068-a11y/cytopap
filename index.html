@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap" rel="stylesheet">
-<title>CytoPAP System v78 — Cervical Cytology Lab Management</title>
+<title>CytoPAP System v79 — Cervical Cytology Lab Management</title>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
 <style>
@@ -254,7 +254,7 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
         <div class="sub">Cervical Cytology<br>Lab Management</div>
       </div>
     </div>
-    <span class="ver" id="ver-badge">v78 — Bethesda 2001 / 2014 🔒</span>
+    <span class="ver" id="ver-badge">v79 — Bethesda 2001 / 2014 🔒</span>
   </div>
   <nav class="nav">
     <button class="nav-btn active" onclick="showPage('form')" id="nb-form">
@@ -293,7 +293,7 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
 <div class="sb-foot">
     <div>ThinPrep PAP / SurePath</div>
     <div>HPV DNA Genotype Testing</div>
-    <div style="margin-top:6px;opacity:.4" id="ver-foot">v78 — CytoPAP System</div>
+    <div style="margin-top:6px;opacity:.4" id="ver-foot">v79 — CytoPAP System</div>
   </div>
 </aside>
 
@@ -1330,7 +1330,7 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
 // ══════════════════════════════════════════════════
 // CytoPAP System — JSONBin Cloud Sync Edition
 // ══════════════════════════════════════════════════
-var APP_VERSION = 'v78';   // ⬅️ แก้เลขเวอร์ชันที่นี่ที่เดียว — จุดอื่นอัปเดตตามอัตโนมัติ
+var APP_VERSION = 'v79';   // ⬅️ แก้เลขเวอร์ชันที่นี่ที่เดียว — จุดอื่นอัปเดตตามอัตโนมัติ
 document.addEventListener('DOMContentLoaded', function(){
   try{
     document.title = document.title.replace(/v\d+/, APP_VERSION);
@@ -1631,6 +1631,72 @@ function runIntegrityCheck(){
 
   return issues;
 }
+// ─── แจ้งเตือนอัตโนมัติตอนเปิดแอป (ไม่ต้องรอให้เข้าไปดูเอง) ───────
+function checkSystemAlerts(){
+  try{
+    var a=capacityAdvice();
+    // เตือนความจุ — เตือนซ้ำไม่เกินเดือนละครั้ง กันรำคาญ
+    if(a.level!=='ok'){
+      var mKey='cp_alert_cap_'+(new Date().getFullYear())+'-'+(new Date().getMonth());
+      if(!localStorage.getItem(mKey)){
+        localStorage.setItem(mKey,'1');
+        var txt = (a.level==='urgent')
+          ? '🛑 พื้นที่ในเครื่องใกล้เต็ม — ควรขยายระบบ (ระยะ 2) แล้ว'
+          : '⚠️ คาดว่าพื้นที่จะเต็มใน '+(a.monthsLeft!==null?a.monthsLeft+' เดือน':'อีกไม่นาน')+' — ควรเริ่มวางแผนขยายระบบ';
+        toast(txt+' → ดูที่เมนู "ตรวจสอบข้อมูล"', 'e', 10000);
+      }
+    }
+    // เตือนสำรองข้อมูล ถ้าไม่ได้สำรองนานเกิน 14 วัน
+    var lastB=localStorage.getItem('cp_last_backup');
+    if(lastB){
+      var days=(Date.now()-parseInt(lastB))/864e5;
+      if(days>14) toast('💾 ไม่ได้สำรองข้อมูลมา '+Math.floor(days)+' วันแล้ว — ควรสำรองไว้','e',8000);
+    }
+  }catch(e){}
+}
+
+function checkSystemAlertsInit(){ setTimeout(checkSystemAlerts, 5000); }
+// ─── ที่ปรึกษาการขยายระบบ — บอกว่า "ถึงเวลาทำระยะ 2 หรือยัง" ────────
+// คำนวณอัตราการเติบโตจริงจาก savedAt แล้วประเมินว่าอีกกี่เดือนจะเต็ม
+function growthStats(){
+  var now=new Date(), months={}, valid=0;
+  REC.forEach(function(r){
+    var t=r.savedAt||r.dc||'';
+    if(!t) return;
+    var d=new Date(t);
+    if(isNaN(d)) return;
+    var age=(now-d)/(1000*60*60*24*30.4);
+    if(age<0 || age>6) return;               // ดูย้อนหลัง 6 เดือน
+    var k=d.getFullYear()+'-'+(d.getMonth()+1);
+    months[k]=(months[k]||0)+1; valid++;
+  });
+  var keys=Object.keys(months);
+  var perMonth = keys.length ? Math.round(valid/keys.length) : 0;
+  return { perMonth: perMonth, sampleMonths: keys.length };
+}
+function capacityAdvice(){
+  var u=lsUsage();
+  var perRec = REC.length ? (u.bytes/REC.length) : 900;
+  var cap = Math.floor(LS_LIMIT/perRec);
+  var g = growthStats();
+  var remain = Math.max(0, cap - REC.length);
+  var monthsLeft = (g.perMonth>0) ? Math.floor(remain/g.perMonth) : null;
+
+  // เกณฑ์ตัดสิน
+  var level, msg, color;
+  if(u.pct>=80 || REC.length>=cap*0.8){
+    level='urgent'; color='#c0392b';
+    msg='🛑 <strong>ต้องทำระยะ 2 แล้ว</strong> — พื้นที่ใกล้เต็ม อาจบันทึกลงเครื่องไม่ได้';
+  } else if(u.pct>=50 || (monthsLeft!==null && monthsLeft<=6)){
+    level='soon'; color='#dd9000';
+    msg='⚠️ <strong>ควรเริ่มวางแผนระยะ 2</strong> — คาดว่าจะชนเพดานภายใน 6 เดือน';
+  } else {
+    level='ok'; color='#1a7a3c';
+    msg='✅ <strong>ยังไม่ต้องทำระยะ 2</strong> — พื้นที่ยังเหลือเพียงพอ';
+  }
+  return { level:level, msg:msg, color:color, cap:cap, remain:remain,
+           perMonth:g.perMonth, monthsLeft:monthsLeft, sampleMonths:g.sampleMonths };
+}
 function renderStorageMeter(){
   var box=document.getElementById('storage-meter');
   if(!box) return;
@@ -1655,9 +1721,36 @@ function renderStorageMeter(){
         'เฉลี่ย <strong>'+(perRec/1024).toFixed(2)+' KB</strong>/รายการ · '+
         'ประมาณเก็บได้อีก <strong style="color:'+col+'">'+remain.toLocaleString()+'</strong> รายการ (เพดาน ~'+capacity.toLocaleString()+')'+
       '</div>'+
-      (u.pct>=60?'<div style="font-size:12px;color:'+col+';margin-top:7px;font-weight:700">⚠️ ควรสำรองข้อมูลและวางแผนเก็บข้อมูลเก่าออกได้แล้ว</div>':'')+
       '<div style="font-size:11.5px;color:#6b7a99;margin-top:7px">ℹ️ ข้อมูลบน Firebase Cloud <strong>ไม่มีข้อจำกัดนี้</strong> (รองรับหลักแสนรายการ) — ตัวจำกัดคือพื้นที่ในเบราว์เซอร์เท่านั้น</div>'+
-    '</div>';
+    '</div>'+
+    renderAdviceBox();
+}
+function renderAdviceBox(){
+  var a=capacityAdvice();
+  var rate = a.perMonth>0
+    ? ('บันทึกเฉลี่ย <strong>'+a.perMonth+'</strong> ราย/เดือน (จากข้อมูล '+a.sampleMonths+' เดือนล่าสุด)')
+    : 'ยังประเมินอัตราการเติบโตไม่ได้ (ข้อมูลใหม่เกินไป)';
+  var eta = (a.monthsLeft!==null)
+    ? (a.monthsLeft>=60
+        ? 'คาดว่ายังใช้ได้อีก <strong>5 ปีขึ้นไป</strong>'
+        : 'คาดว่าจะชนเพดานในอีก <strong style="color:'+a.color+'">'+a.monthsLeft+' เดือน</strong> (~'+(new Date(Date.now()+a.monthsLeft*30.4*864e5)).toLocaleDateString('th-TH',{year:'numeric',month:'long'})+')')
+    : '';
+  return '<div style="margin-top:12px;border:2px solid '+a.color+';border-radius:10px;padding:13px 15px;background:#fff">'+
+    '<div style="font-size:13.5px;color:#24324d;line-height:1.9">'+a.msg+'</div>'+
+    '<div style="font-size:12.5px;color:#44506b;margin-top:6px;line-height:1.9">'+rate+'<br>'+eta+'</div>'+
+    '<details style="margin-top:9px">'+
+      '<summary style="cursor:pointer;font-size:12.5px;color:#1a3a6e;font-weight:700">📋 เกณฑ์ตัดสินใจ (กดดู)</summary>'+
+      '<div style="font-size:12px;color:#44506b;line-height:1.9;margin-top:7px;padding-left:4px">'+
+        '<div><strong style="color:#c0392b">🔴 H1 (ความปลอดภัย) — ทำเลย ไม่ต้องรอเงื่อนไข</strong><br>'+
+        'ช่องโหว่เปิดอยู่ตอนนี้ ไม่เกี่ยวกับจำนวนรายการ</div>'+
+        '<div style="margin-top:7px"><strong>ระยะ 2 (ความจุ/ความเร็ว) ทำเมื่อ:</strong><br>'+
+        '• พื้นที่ใช้เกิน <strong>50%</strong> → เริ่มวางแผน<br>'+
+        '• พื้นที่ใช้เกิน <strong>80%</strong> → ต้องทำแล้ว<br>'+
+        '• หรือคาดว่าจะเต็มภายใน <strong>6 เดือน</strong><br>'+
+        '• หรือรู้สึกว่า<strong>บันทึกช้าลงชัดเจน</strong></div>'+
+      '</div>'+
+    '</details>'+
+  '</div>';
 }
 function renderIntegrity(){
   var box=document.getElementById('integrity-result');
@@ -4174,6 +4267,7 @@ loadData();
 fillClinicSelect();
 fillDefaultStaff();
 loadAudit();
+checkSystemAlertsInit();
 setupPills();
 
 // ตอนเปิดแอป: ถ้ารอบก่อนบันทึกตอนออฟไลน์ไว้ → เตือนและซิงค์ให้อัตโนมัติ
