@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap" rel="stylesheet">
-<title>CytoPAP System v86 — Cervical Cytology Lab Management</title>
+<title>CytoPAP System v87 — Cervical Cytology Lab Management</title>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
 <style>
@@ -256,7 +256,7 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
         <div class="sub">Cervical Cytology<br>Lab Management</div>
       </div>
     </div>
-    <span class="ver" id="ver-badge">v86 — Bethesda 2001 / 2014 🔒</span>
+    <span class="ver" id="ver-badge">v87 — Bethesda 2001 / 2014 🔒</span>
   </div>
   <nav class="nav">
     <button class="nav-btn active" onclick="showPage('form')" id="nb-form">
@@ -279,6 +279,10 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
       สถิติ & กราฟ
     </button>
+    <button class="nav-btn" onclick="showPage('followup')" id="nb-followup">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+      ติดตามผลผิดปกติ
+    </button>
     <button class="nav-btn" onclick="showPage('audit')" id="nb-audit">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
       ตรวจสอบข้อมูล
@@ -295,7 +299,7 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
 <div class="sb-foot">
     <div>ThinPrep PAP / SurePath</div>
     <div>HPV DNA Genotype Testing</div>
-    <div style="margin-top:6px;opacity:.4" id="ver-foot">v86 — CytoPAP System</div>
+    <div style="margin-top:6px;opacity:.4" id="ver-foot">v87 — CytoPAP System</div>
   </div>
 </aside>
 
@@ -306,6 +310,9 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
 <div id="page-form" class="page active">
   <div class="page-title">บันทึกผลตรวจ Pap Smear / HPV DNA</div>
   <div class="page-sub">กรอกข้อมูลผู้ป่วยและผลการตรวจ — มาตรฐาน Bethesda 2001 / 2014</div>
+
+  <!-- Dashboard สรุปภาพรวม -->
+  <div id="dash-strip" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px"></div>
 
   <!-- Edit mode banner -->
   <div id="edit-banner" style="display:none;align-items:center;gap:12px;background:#fff8e6;border:1.5px solid #f0c040;border-left:4px solid #dd9000;border-radius:10px;padding:12px 16px;margin-bottom:16px">
@@ -668,7 +675,7 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
       ดูผลก่อนพิมพ์
     </button>
-    <button class="btn btn-primary" onclick="saveAndPrint()">
+    <button id="btn-save" class="btn btn-primary" onclick="saveAndPrint()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
       <span id="btn-save-label">บันทึก &amp; พิมพ์ PDF</span>
     </button>
@@ -1061,6 +1068,26 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
   </div>
 </div>
 
+<!-- ── PAGE: FOLLOW-UP (สรุปผลผิดปกติที่ต้องติดตาม) ── -->
+<div id="page-followup" class="page">
+  <h1 class="page-title">🔔 ติดตามผลผิดปกติ</h1>
+  <p class="page-sub">รายชื่อผู้ป่วยที่ผลผิดปกติและควรติดตาม (HSIL / มะเร็ง / ASC-H / AGC / HPV 16,18) — กันไม่ให้พลาดเคสสำคัญ</p>
+
+  <div class="card" style="border:2px solid #c0392b">
+    <div class="card-head" style="background:#fdecea;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+      <span style="color:#c0392b">🔴 เคสที่ต้องติดตาม</span>
+      <div style="display:flex;gap:6px;align-items:center">
+        <label style="font-size:12px;color:#555">เดือน:</label>
+        <select id="fu-month" onchange="renderFollowup()" class="qe-inp" style="min-width:150px"></select>
+      </div>
+    </div>
+    <div class="card-body">
+      <div id="fu-summary" style="margin-bottom:10px"></div>
+      <div id="fu-list"></div>
+    </div>
+  </div>
+</div>
+
 <!-- ── PAGE: SETTINGS ── -->
 <div id="page-audit" class="page">
   <h1 class="page-title">🔍 ตรวจสอบข้อมูล</h1>
@@ -1347,14 +1374,32 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
 // ══════════════════════════════════════════════════
 // CytoPAP System — JSONBin Cloud Sync Edition
 // ══════════════════════════════════════════════════
-var APP_VERSION = 'v86';   // ⬅️ แก้เลขเวอร์ชันที่นี่ที่เดียว — จุดอื่นอัปเดตตามอัตโนมัติ
+var APP_VERSION = 'v87';   // ⬅️ แก้เลขเวอร์ชันที่นี่ที่เดียว — จุดอื่นอัปเดตตามอัตโนมัติ
 document.addEventListener('DOMContentLoaded', function(){
   try{
     document.title = document.title.replace(/v\d+/, APP_VERSION);
     var b=document.getElementById('ver-badge'); if(b) b.textContent = APP_VERSION+' — Bethesda 2001 / 2014 🔒';
     var f=document.getElementById('ver-foot');  if(f) f.textContent = APP_VERSION+' — CytoPAP System';
   }catch(e){}
+  // เตือนก่อนปิด/รีเฟรช ถ้ากำลังกรอกผลค้างอยู่ (กันข้อมูลหาย)
+  window.addEventListener('beforeunload', function(e){
+    if(formHasUnsavedData()){ e.preventDefault(); e.returnValue=''; return ''; }
+  });
 });
+// ตรวจว่าฟอร์มมีข้อมูลที่ยัง "กรอกค้าง" (ยังไม่บันทึก) หรือไม่
+function formHasUnsavedData(){
+  // เฉพาะตอนอยู่หน้าฟอร์ม
+  var pf=document.getElementById('page-form');
+  if(!pf || !pf.classList.contains('active')) return false;
+  if(window._editingId) return true;   // กำลังแก้ไขอยู่ = ถือว่าค้าง
+  // ชื่อที่กรอกจริง (ตัด "คุณ " อัตโนมัติออก)
+  var nm=(document.getElementById('f-name')||{}).value||'';
+  var nameReal=nm.replace(/^คุณ\s*/,'').trim();
+  var phone=(document.getElementById('f-phone')||{}).value||'';
+  var rmk=(document.getElementById('f-rmk')||{}).value||'';
+  // ถ้ากรอกชื่อจริง หรือเบอร์ หรือหมายเหตุ = มีข้อมูลค้าง
+  return !!(nameReal || phone.trim() || rmk.trim());
+}
 var REC = [], CFG = {};
 // L4: โลโก้เก็บครั้งเดียว แล้วอ่านซ้ำจาก <img> บนหน้า (เดิมเก็บ base64 180KB ซ้ำ 2 ที่ = ไฟล์บวม)
 var LOGO_URI = (function(){ var e=document.querySelector('img[src^="data:image"]'); return e ? e.src : ''; })();
@@ -2531,7 +2576,7 @@ function buildReport(d){
           '</td>'+
         '</tr>'+
       '</table>'+
-      '<div style="font-size:9.5pt;font-weight:400;line-height:1.4;margin-bottom:5pt;border:1px solid #ddd;padding:4pt 7pt;background:#fafafa;color:#333">'+
+      '<div style="font-size:8pt;font-weight:400;line-height:1.4;margin-bottom:5pt;border:1px solid #ddd;padding:4pt 7pt;background:#fafafa;color:#333">'+
         'Test Description: '+eh(desc)+
       '</div>';
   }
@@ -2705,8 +2750,21 @@ function printDoc(d){
 }
 
 // ─── SAVE & PRINT ─────────────────────────────────
+var _saving=false;
 async function saveAndPrint(){
   if(isReadOnly()){ toast('โหมดคลินิก: ดูผลได้อย่างเดียว บันทึกไม่ได้','e',4000); return; }
+  if(_saving){ return; }                    // กันกดรัวซ้ำ — บันทึกซ้ำ 2 รอบ
+  _saving=true;
+  var _sbtn=document.getElementById('btn-save');
+  if(_sbtn) _sbtn.disabled=true;
+  try{
+    await _doSaveAndPrint();
+  } finally {
+    _saving=false;
+    if(_sbtn) _sbtn.disabled=false;
+  }
+}
+async function _doSaveAndPrint(){
   var d=collectForm();
   if(!d.name || d.name.trim()==='คุณ' || d.name.replace(/^คุณ\s*/,'').trim().length<1){toast('กรุณากรอกชื่อ-สกุลผู้ป่วย','e');return}
   if(!d.cyto){toast('กรุณากรอก CYTO LOHY Number','e');return}
@@ -3617,8 +3675,164 @@ function showPage(p){
   if(p==='records'){ var rq=document.getElementById('rec-q'); if(rq) rq.value=''; renderRec(); populateBatchNew(); } if(p==='batch'){ document.getElementById('batch-list').style.display='none'; document.getElementById('batch-empty').style.display='none'; }
   if(p==='settings') loadSettings();
   if(p==='form' && !window._editingId){ var _fc=document.getElementById('f-cyto'); if(_fc && !_fc.value) _fc.value=getNextNo(); var _fnm=document.getElementById('f-name'); if(_fnm && !_fnm.value.trim()) _fnm.value='คุณ '; updateLotBanner(); }
+  if(p==='form') renderDashboard();
   if(p==='billing') initBillingPage();
   if(p==='stats') renderStats();
+  if(p==='followup') renderFollowup();
+}
+
+// ─── FOLLOW-UP: สรุปผลผิดปกติที่ต้องติดตาม ─────────────
+// ใช้ isHighRisk(r) เดียวกับป้ายเตือน ⚠ (HPV16/18, HSIL, carcinoma, AGC, ASC-H)
+// + รวม abnormal อื่นๆ (ASC-US, LSIL) แยกระดับความเร่งด่วน
+function fuMonthKey(r){
+  var ds=r.dc||r.dr; if(!ds) return null;
+  var p=ds.split('-'); if(p.length!==3) return null;
+  var y=parseInt(p[0]); if(y>2500) y-=543;
+  var m=parseInt(p[1]); if(!y||!m) return null;
+  return { key:y+'-'+('0'+m).slice(-2), y:y, m:m };
+}
+function fuIsAbnormal(r){
+  if(r.examType==='biopsy') return false;
+  // ผิดปกติทาง cytology
+  if(r.cat==='Epithelial Cell Abnormality') return true;
+  // HPV ตรวจพบ (แม้ cytology ปกติ ก็ควรติดตาม)
+  if(r.hr==='Detected') return true;
+  return false;
+}
+function fuLevel(r){
+  // 🔴 ด่วนมาก = high risk (HSIL/มะเร็ง/AGC/ASC-H/HPV16,18)
+  if(isHighRisk(r)) return 3;
+  // 🟠 ผิดปกติทั่วไป (ASC-US/LSIL) หรือ HPV high-risk อื่นๆ ตรวจพบ
+  if(r.cat==='Epithelial Cell Abnormality') return 2;
+  if(r.hr==='Detected') return 1;
+  return 0;
+}
+// ─── DASHBOARD สรุปภาพรวมบนหน้าฟอร์ม ─────────────────
+function renderDashboard(){
+  var host=document.getElementById('dash-strip'); if(!host) return;
+  if(!REC.length){ host.innerHTML=''; return; }
+  var now=new Date(); var cy=now.getFullYear(), cm=now.getMonth()+1;
+  // เคสเดือนนี้
+  var thisMonth=REC.filter(function(r){
+    var ds=r.dc||r.dr; if(!ds) return false;
+    var p=ds.split('-'); if(p.length!==3) return false;
+    var y=parseInt(p[0]); if(y>2500) y-=543;
+    return y===cy && parseInt(p[1])===cm;
+  });
+  // ผิดปกติที่ต้องติดตาม (ทั้งระบบ)
+  var followup=REC.filter(fuIsAbnormal);
+  var followHigh=followup.filter(function(r){return isHighRisk(r);}).length;
+  // ค้างซิงค์ (ถ้ามีระบบ unsynced)
+  var unsynced=(typeof UNSYNCED!=='undefined' && UNSYNCED)?UNSYNCED.length:0;
+
+  function card(num,label,color,bg,onclick){
+    return '<div style="flex:1;min-width:130px;background:'+bg+';border-radius:10px;padding:12px 14px;'+(onclick?'cursor:pointer;':'')+'border:1px solid '+color+'33"'+(onclick?' onclick="'+onclick+'"':'')+'>'+
+      '<div style="font-size:24px;font-weight:800;color:'+color+';line-height:1">'+num+'</div>'+
+      '<div style="font-size:11.5px;color:#555;margin-top:4px">'+label+'</div>'+
+    '</div>';
+  }
+  var html=
+    card(REC.length,'📋 เคสทั้งหมดในระบบ','#1a3a6e','#eef2fb')+
+    card(thisMonth.length,'📅 เคสเดือนนี้','#1a7a3c','#eaf7ef')+
+    card(followup.length+(followHigh?' <span style=\"font-size:12px\">('+followHigh+' ด่วน)</span>':''),'🔔 ผิดปกติต้องติดตาม','#c0392b','#fdecea','showPage(\'followup\')');
+  if(unsynced>0){
+    html+=card(unsynced,'⚠️ ค้างซิงค์ Cloud','#d68910','#fef5e7');
+  }
+  host.innerHTML=html;
+}
+
+function fuDate(ds){
+  if(!ds) return '-';
+  var p=String(ds).split('-'); if(p.length!==3) return eh(ds);
+  var y=parseInt(p[0]); if(y<2500) y+=543;
+  return p[2]+'/'+p[1]+'/'+y;
+}
+function renderFollowup(){
+  var sel=document.getElementById('fu-month'); if(!sel) return;
+
+  // 1) หาเดือนทั้งหมดที่มีเคสผิดปกติ
+  var abn=REC.filter(fuIsAbnormal);
+  var monthsMap={};
+  abn.forEach(function(r){ var mk=fuMonthKey(r); if(mk) monthsMap[mk.key]=mk; });
+  var months=Object.keys(monthsMap).map(function(k){return monthsMap[k];})
+             .sort(function(a,b){return (b.y*100+b.m)-(a.y*100+a.m);});
+
+  // 2) เติม dropdown (คงค่าที่เลือกไว้ถ้ามี)
+  var thM=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  var prev=sel.value;
+  var opts='<option value="ALL">ทุกเดือน ('+abn.length+' เคส)</option>';
+  months.forEach(function(mk){
+    var cnt=abn.filter(function(r){var k=fuMonthKey(r);return k&&k.key===mk.key;}).length;
+    opts+='<option value="'+mk.key+'">'+thM[mk.m-1]+' '+(mk.y+543)+' ('+cnt+' เคส)</option>';
+  });
+  sel.innerHTML=opts;
+  if(prev && (prev==='ALL'||monthsMap[prev])) sel.value=prev;
+
+  // 3) กรองตามเดือนที่เลือก
+  var pick=sel.value||'ALL';
+  var list=abn.filter(function(r){
+    if(pick==='ALL') return true;
+    var k=fuMonthKey(r); return k&&k.key===pick;
+  });
+  // เรียง: ด่วนสุดก่อน แล้วตามวันที่ล่าสุด
+  list.sort(function(a,b){
+    var lv=fuLevel(b)-fuLevel(a); if(lv) return lv;
+    return String(b.dc||b.dr||'').localeCompare(String(a.dc||a.dr||''));
+  });
+
+  // 4) สรุปหัวตาราง
+  var nHigh=list.filter(function(r){return fuLevel(r)===3;}).length;
+  var nMid=list.filter(function(r){return fuLevel(r)===2;}).length;
+  var nHpv=list.filter(function(r){return fuLevel(r)===1;}).length;
+  var sm=document.getElementById('fu-summary');
+  if(sm){
+    sm.innerHTML=
+      '<div style="display:flex;gap:10px;flex-wrap:wrap">'+
+        '<div style="flex:1;min-width:120px;background:#fdecea;border:1px solid #f5b7b1;border-radius:8px;padding:10px;text-align:center">'+
+          '<div style="font-size:22px;font-weight:800;color:#c0392b">'+nHigh+'</div>'+
+          '<div style="font-size:11px;color:#922b21">🔴 ด่วนมาก<br>HSIL/มะเร็ง/HPV16,18</div>'+
+        '</div>'+
+        '<div style="flex:1;min-width:120px;background:#fef5e7;border:1px solid #f8c471;border-radius:8px;padding:10px;text-align:center">'+
+          '<div style="font-size:22px;font-weight:800;color:#d68910">'+nMid+'</div>'+
+          '<div style="font-size:11px;color:#9c640c">🟠 ผิดปกติ<br>ASC-US/LSIL</div>'+
+        '</div>'+
+        '<div style="flex:1;min-width:120px;background:#eaf2f8;border:1px solid #aed6f1;border-radius:8px;padding:10px;text-align:center">'+
+          '<div style="font-size:22px;font-weight:800;color:#2471a3">'+nHpv+'</div>'+
+          '<div style="font-size:11px;color:#1a5276">🔵 HPV+ อื่นๆ<br>(cytology ปกติ)</div>'+
+        '</div>'+
+      '</div>';
+  }
+
+  // 5) รายการ
+  var host=document.getElementById('fu-list'); if(!host) return;
+  if(!list.length){
+    host.innerHTML='<div style="text-align:center;padding:30px;color:#27ae60;font-weight:600">✅ ไม่พบเคสผิดปกติในช่วงที่เลือก</div>';
+    return;
+  }
+  var rows=list.map(function(r){
+    var lv=fuLevel(r);
+    var dot=lv===3?'🔴':lv===2?'🟠':'🔵';
+    var bdr=lv===3?'#c0392b':lv===2?'#d68910':'#2471a3';
+    // สรุปผลสั้นๆ
+    var res=[];
+    if(r.cat==='Epithelial Cell Abnormality'){ res.push(eh(r.sqm||r.gln||'ผิดปกติ')); }
+    if(r.hr==='Detected'){
+      var g=(r.hrGenos||[]).slice();
+      var hot=g.filter(function(x){return x==='16'||x==='18';});
+      res.push('HPV+'+(g.length?' ('+g.join(',')+')':'')+(hot.length?' ⚠':''));
+    }
+    var when=fuDate(r.dc||r.dr||'');
+    return '<div style="border:1px solid #eee;border-left:4px solid '+bdr+';border-radius:6px;padding:8px 10px;margin-bottom:6px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">'+
+      '<span style="font-size:16px">'+dot+'</span>'+
+      '<div style="flex:1;min-width:180px">'+
+        '<div style="font-weight:700;color:#1a3a6e">'+eh(r.name||'-')+' <span style="font-weight:400;color:#888;font-size:12px">· No.'+eh(r.cyto||'-')+'</span></div>'+
+        '<div style="font-size:12px;color:#c0392b;font-weight:600">'+res.join(' · ')+'</div>'+
+        '<div style="font-size:11px;color:#888">'+eh(r.clinic||'ไม่ระบุคลินิก')+' · '+when+(r.phone?' · ☎ '+eh(r.phone):'')+'</div>'+
+      '</div>'+
+      '<button class="btn btn-sm btn-outline" onclick="previewRec('+JSON.stringify(r._id)+')">ดูผล</button>'+
+    '</div>';
+  }).join('');
+  host.innerHTML=rows;
 }
 
 // ─── TOAST ────────────────────────────────────────
@@ -4419,6 +4633,7 @@ loadData();
 fillClinicSelect();
 fillDefaultStaff();
 loadAudit();
+renderDashboard();
 checkSystemAlertsInit();
 setupPills();
 
