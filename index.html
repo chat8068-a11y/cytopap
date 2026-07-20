@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap" rel="stylesheet">
-<title>CytoPAP System v84 — Cervical Cytology Lab Management</title>
+<title>CytoPAP System v86 — Cervical Cytology Lab Management</title>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
 <style>
@@ -218,6 +218,8 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
   body.printing #print-toolbar{display:none !important}
   body.printing .no-print{display:none !important}
   body.printing #print-host{max-width:none !important;margin:0 !important}
+  body.printing .report-page{page-break-inside:avoid !important;break-inside:avoid !important}
+  body.printing .report-page:last-child{page-break-after:avoid !important}
   @page{size:A4;margin:0}
 }
 </style>
@@ -254,7 +256,7 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
         <div class="sub">Cervical Cytology<br>Lab Management</div>
       </div>
     </div>
-    <span class="ver" id="ver-badge">v84 — Bethesda 2001 / 2014 🔒</span>
+    <span class="ver" id="ver-badge">v86 — Bethesda 2001 / 2014 🔒</span>
   </div>
   <nav class="nav">
     <button class="nav-btn active" onclick="showPage('form')" id="nb-form">
@@ -293,7 +295,7 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
 <div class="sb-foot">
     <div>ThinPrep PAP / SurePath</div>
     <div>HPV DNA Genotype Testing</div>
-    <div style="margin-top:6px;opacity:.4" id="ver-foot">v84 — CytoPAP System</div>
+    <div style="margin-top:6px;opacity:.4" id="ver-foot">v86 — CytoPAP System</div>
   </div>
 </aside>
 
@@ -1345,7 +1347,7 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
 // ══════════════════════════════════════════════════
 // CytoPAP System — JSONBin Cloud Sync Edition
 // ══════════════════════════════════════════════════
-var APP_VERSION = 'v84';   // ⬅️ แก้เลขเวอร์ชันที่นี่ที่เดียว — จุดอื่นอัปเดตตามอัตโนมัติ
+var APP_VERSION = 'v86';   // ⬅️ แก้เลขเวอร์ชันที่นี่ที่เดียว — จุดอื่นอัปเดตตามอัตโนมัติ
 document.addEventListener('DOMContentLoaded', function(){
   try{
     document.title = document.title.replace(/v\d+/, APP_VERSION);
@@ -2529,18 +2531,19 @@ function buildReport(d){
           '</td>'+
         '</tr>'+
       '</table>'+
-      '<div style="font-size:9.5pt;line-height:1.45;margin-bottom:5pt;border:1px solid #ddd;padding:4pt 7pt;background:#fafafa;color:#333">'+
-        '<b>Test Description:</b> '+eh(desc)+
+      '<div style="font-size:9.5pt;font-weight:400;line-height:1.4;margin-bottom:5pt;border:1px solid #ddd;padding:4pt 7pt;background:#fafafa;color:#333">'+
+        'Test Description: '+eh(desc)+
       '</div>';
   }
   var rmkDiv=d.rmk?'<div style="border:1px solid #ccc;padding:3pt 6pt;font-size:12pt;font-weight:500;color:#444;margin-bottom:4pt">Remarks: '+eh(d.rmk)+'</div>':'';
 
-  return '<div style="'+
+  return '<div class="report-page" style="'+
     'font-family:\'Sarabun\',\'TH Sarabun New\',\'Leelawadee UI\',\'Leelawadee\',\'Tahoma\',serif;'+
-    'font-size:13pt;font-weight:bold;line-height:1.4;color:#000;background:#fff;'+
-    'padding:12mm 14mm 10mm 14mm;'+
-    'width:210mm;min-height:277mm;box-sizing:border-box;'+
-    'page-break-after:always">'+
+    'font-size:13pt;font-weight:bold;line-height:1.35;color:#000;background:#fff;'+
+    'padding:10mm 14mm 8mm 14mm;'+
+    'width:210mm;min-height:293mm;box-sizing:border-box;'+
+    'page-break-inside:avoid;break-inside:avoid;'+
+    'page-break-after:always;break-after:page">'+
 
     // Header with Logo
     '<div style="border-bottom:2px solid #000;margin-bottom:6pt;padding-bottom:5pt">'+
@@ -3180,7 +3183,9 @@ function printBatch(){
     '@page{size:A4;margin:0}'+
     'html,body{margin:0;padding:0;width:210mm}'+
     'body{font-family:"Sarabun","TH Sarabun New","Leelawadee UI","Leelawadee","Tahoma",serif}'+
-    '*{box-sizing:border-box;-webkit-print-color-adjust:exact}'+
+    '*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}'+
+    '.report-page{width:210mm;min-height:296mm;page-break-inside:avoid;break-inside:avoid;page-break-after:always}'+
+    '.report-page:last-child{page-break-after:avoid!important}'+
     'div[style*="page-break-after"]:last-child{page-break-after:avoid!important}'+
     '</style>'+
     '</head><body>'+pages+
