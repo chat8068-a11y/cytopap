@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap" rel="stylesheet">
-<title>CytoPAP System v96 — Cervical Cytology Lab Management</title>
+<title>CytoPAP System v97 — Cervical Cytology Lab Management</title>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
 <style>
@@ -259,7 +259,7 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
         <div class="sub">Cervical Cytology<br>Lab Management</div>
       </div>
     </div>
-    <span class="ver" id="ver-badge">v96 — Bethesda 2001 / 2014 🔒</span>
+    <span class="ver" id="ver-badge">v97 — Bethesda 2001 / 2014 🔒</span>
   </div>
   <nav class="nav">
     <button class="nav-btn active" onclick="showPage('form')" id="nb-form">
@@ -302,7 +302,7 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
 <div class="sb-foot">
     <div>ThinPrep PAP / SurePath</div>
     <div>HPV DNA Genotype Testing</div>
-    <div style="margin-top:6px;opacity:.4" id="ver-foot">v96 — CytoPAP System</div>
+    <div style="margin-top:6px;opacity:.4" id="ver-foot">v97 — CytoPAP System</div>
   </div>
 </aside>
 
@@ -1405,7 +1405,7 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
 // ══════════════════════════════════════════════════
 // CytoPAP System — JSONBin Cloud Sync Edition
 // ══════════════════════════════════════════════════
-var APP_VERSION = 'v96';   // ⬅️ แก้เลขเวอร์ชันที่นี่ที่เดียว — จุดอื่นอัปเดตตามอัตโนมัติ
+var APP_VERSION = 'v97';   // ⬅️ แก้เลขเวอร์ชันที่นี่ที่เดียว — จุดอื่นอัปเดตตามอัตโนมัติ
 document.addEventListener('DOMContentLoaded', function(){
   try{
     document.title = document.title.replace(/v\d+/, APP_VERSION);
@@ -2683,7 +2683,7 @@ function buildReport(d){
           '<td style="border:1px solid #000;padding:3pt 6pt;text-align:center;font-size:12pt;font-weight:500">Cytologic No. '+eh(d.cyto)+'</td>'+
         '</tr>'+
       '</table>'+
-      '<div style="border:1px solid #000;padding:3pt 6pt;font-size:12.5pt;font-weight:500;margin-bottom:4pt"><b>Method :&nbsp;</b>'+eh(d.mt)+'</div>'
+      '<div style="border:1px solid #000;padding:3pt 6pt;font-size:11pt;font-weight:500;margin-bottom:4pt;line-height:1.3"><b>Method :&nbsp;</b>'+eh(d.mt)+'</div>'
     )+
 
     // Cytology / Biopsy / HPV-only — แสดงตามประเภทการตรวจ
@@ -2783,12 +2783,19 @@ function printInPage(innerHtml, docTitle){
 // สำคัญ: window.print() ต้องถูกเรียก "ตรงๆ" ในจังหวะที่ผู้ใช้แตะปุ่ม (ห้ามหน่วงเวลา) ไม่งั้น iOS บล็อก
 function doPrintNow(){
   document.body.classList.add('printing');
+  // บังคับ iOS คำนวณ layout ให้เสร็จก่อนพิมพ์ (กัน "กดแล้วไม่ตอบ" เพราะ layout ยังไม่ทัน)
+  void document.body.offsetHeight;
+  // ล้าง state เมื่อพิมพ์เสร็จจริง (afterprint) แทนการเดาเวลา
+  var cleaned=false;
+  var cleanup=function(){ if(cleaned) return; cleaned=true; document.body.classList.remove('printing'); window.removeEventListener('afterprint',cleanup); };
+  window.addEventListener('afterprint',cleanup);
+  setTimeout(cleanup, 4000);   // สำรอง เผื่อ afterprint ไม่ยิงบางอุปกรณ์
   try{
     window.print();
   }catch(e){
+    cleanup();
     toast('อุปกรณ์นี้สั่งพิมพ์ไม่ได้ — ลองใช้เมนูแชร์ของ Safari (ไอคอนสี่เหลี่ยมลูกศรขึ้น) แล้วเลือก "พิมพ์" หรือ "บันทึกเป็น PDF"','e',10000);
   }
-  setTimeout(function(){ document.body.classList.remove('printing'); }, 800);
 }
 function closePrintOverlay(){
   var ov=document.getElementById('print-overlay');
@@ -3137,13 +3144,38 @@ async function _sharePdf(blob, fname, title){
   return 'download';
 }
 // ส่ง PDF รายคน — ใช้พิมพ์เบราว์เซอร์ (สวยชัวร์ เหมือน PC) เลิก html2canvas ที่เพี้ยนบน iPhone
-function sendPdfClinic(r){
+// ส่ง PDF รายคน — html2canvas สร้างไฟล์จริง (ตอบสนองชัวร์บน iPhone → บันทึก/แชร์ได้ทันที)
+async function sendPdfClinic(r){
   if(!r){ toast('ไม่พบข้อมูลรายการนี้','e'); return; }
-  printDoc(r);   // เปิดหน้าพิมพ์ → กด 🖨️ → บันทึก/แชร์ PDF ได้
+  toast('⏳ กำลังสร้าง PDF...', 'i', 5000);
+  try{
+    var pdf=await _reportsToPdf([r]);
+    var fname=_safeName('CYTO'+(r.cyto||'')+'_'+(r.name||''))+'.pdf';
+    var res=await _sharePdf(pdf.output('blob'), fname, 'ผลตรวจ '+(r.name||''));
+    toast(res==='download'?'✅ ดาวน์โหลด PDF แล้ว — แนบส่ง LINE/อีเมลได้เลย':(res==='shared'?'✅ ส่ง PDF แล้ว':'ยกเลิกการส่ง'), 'i', 5000);
+  }catch(e){
+    console.error('[sendPdfClinic]',e);
+    toast('สร้าง PDF ไม่สำเร็จ — ลองปุ่ม "PDF" (พิมพ์เบราว์เซอร์) แทน','e',7000);
+  }
 }
 // ส่งผล PDF รวม — ใช้พิมพ์เบราว์เซอร์ (สวยชัวร์ เหมือน PC) เลิก html2canvas ที่เพี้ยนบน iPhone
-function sendBatchPdf(){
-  printBatch();   // เปิดหน้าพิมพ์รวม → กด 🖨️ → บันทึก/แชร์ PDF ได้
+// ส่งผล PDF รวม — html2canvas สร้างไฟล์จริงหลายหน้า (ตอบสนองชัวร์บน iPhone)
+async function sendBatchPdf(){
+  var selected=[];
+  document.querySelectorAll('.batch-cb:checked').forEach(function(cb){var ri=parseInt(cb.getAttribute('data-ri'));if(REC[ri])selected.push(REC[ri]);});
+  selected.sort(function(a,b){return(parseInt(a.cyto)||0)-(parseInt(b.cyto)||0);});
+  if(!selected.length){ toast('กรุณาเลือกอย่างน้อย 1 รายการ','e'); return; }
+  if(selected.length>20 && !confirm('เลือก '+selected.length+' ใบ — สร้าง PDF จำนวนมากอาจใช้เวลาสักครู่ ดำเนินการต่อ?')) return;
+  toast('⏳ กำลังสร้าง PDF '+selected.length+' ใบ...', 'i', 8000);
+  try{
+    var pdf=await _reportsToPdf(selected);
+    var fname='CYTO_batch_'+selected.length+'ใบ_'+_safeName(selected[0].cyto+'-'+selected[selected.length-1].cyto)+'.pdf';
+    var res=await _sharePdf(pdf.output('blob'), fname, 'ผลตรวจ '+selected.length+' ใบ');
+    toast(res==='download'?'✅ ดาวน์โหลด PDF รวม '+selected.length+' ใบแล้ว':(res==='shared'?'✅ ส่ง PDF แล้ว':'ยกเลิก'),'i',5000);
+  }catch(e){
+    console.error('[sendBatchPdf]',e);
+    toast('สร้าง PDF ไม่สำเร็จ — ลองปุ่ม "พิมพ์เป็นช่วง" แทน','e',7000);
+  }
 }
 async function _unused_sendBatchPdf(){
   var selected=[];
