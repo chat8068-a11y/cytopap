@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap" rel="stylesheet">
-<title>CytoPAP System v98 — Cervical Cytology Lab Management</title>
+<title>CytoPAP System v99 — Cervical Cytology Lab Management</title>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
 <style>
@@ -259,7 +259,7 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
         <div class="sub">Cervical Cytology<br>Lab Management</div>
       </div>
     </div>
-    <span class="ver" id="ver-badge">v98 — Bethesda 2001 / 2014 🔒</span>
+    <span class="ver" id="ver-badge">v99 — Bethesda 2001 / 2014 🔒</span>
   </div>
   <nav class="nav">
     <button class="nav-btn active" onclick="showPage('form')" id="nb-form">
@@ -302,7 +302,7 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
 <div class="sb-foot">
     <div>ThinPrep PAP / SurePath</div>
     <div>HPV DNA Genotype Testing</div>
-    <div style="margin-top:6px;opacity:.4" id="ver-foot">v98 — CytoPAP System</div>
+    <div style="margin-top:6px;opacity:.4" id="ver-foot">v99 — CytoPAP System</div>
   </div>
 </aside>
 
@@ -426,7 +426,11 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
           <label class="pill"><input type="radio" name="sp" value="Cervical">Cervical</label>
           <label class="pill"><input type="radio" name="sp" value="Vaginal">Vaginal</label>
           <label class="pill"><input type="radio" name="sp" value="Endocervical">Endocervical</label>
+          <label class="pill"><input type="radio" name="sp" value="Anal">Anal</label>
+          <label class="pill"><input type="radio" name="sp" value="Other">Other (พิมพ์เอง)</label>
         </div>
+        <input type="text" id="sp-other" placeholder="ระบุชนิดสิ่งส่งตรวจ เช่น Urine, Sputum..." autocomplete="off"
+          style="display:none;width:100%;margin-top:8px;font-family:'Leelawadee UI','Tahoma',sans-serif;font-size:14px;padding:9px 13px;border:1.5px solid #d1dce8;border-radius:8px;outline:none;box-sizing:border-box">
       </div>
       <div class="field">
         <label>Method</label>
@@ -1405,7 +1409,7 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
 // ══════════════════════════════════════════════════
 // CytoPAP System — JSONBin Cloud Sync Edition
 // ══════════════════════════════════════════════════
-var APP_VERSION = 'v98';   // ⬅️ แก้เลขเวอร์ชันที่นี่ที่เดียว — จุดอื่นอัปเดตตามอัตโนมัติ
+var APP_VERSION = 'v99';   // ⬅️ แก้เลขเวอร์ชันที่นี่ที่เดียว — จุดอื่นอัปเดตตามอัตโนมัติ
 document.addEventListener('DOMContentLoaded', function(){
   try{
     document.title = document.title.replace(/v\d+/, APP_VERSION);
@@ -2099,6 +2103,14 @@ function setupPills(){
 }
 function onPillChange(name,val){
   if(name==='examType'){ onExamTypeChange(val); return; }
+  if(name==='sp'){
+    var spo=document.getElementById('sp-other');
+    if(spo){
+      var show=(val==='Other');
+      spo.style.display=show?'block':'none';
+      if(show) setTimeout(function(){spo.focus();},50);
+    }
+  }
   if(name==='cat'){
     document.getElementById('sec-org').style.display='block';
     document.getElementById('sec-epi').style.display=val==='Epithelial Cell Abnormality'?'block':'none';
@@ -2292,6 +2304,18 @@ function setRadio(name,val){
     if(r.parentElement) r.parentElement.classList[on?'add':'remove']('sel');
   });
 }
+// ตั้งค่า Type of Specimen — รองรับค่ามาตรฐาน + ค่าพิมพ์เอง (Other)
+function setSpecimen(val){
+  var known=['Cervical/Vagina/Endocervical','Cervical','Vaginal','Endocervical','Anal','Other'];
+  var spo=document.getElementById('sp-other');
+  if(!val){ setRadio('sp','Cervical/Vagina/Endocervical'); if(spo){spo.style.display='none';spo.value='';} return; }
+  if(known.indexOf(val)>=0 && val!=='Other'){
+    setRadio('sp',val); if(spo){spo.style.display='none';spo.value='';}
+  } else {
+    // ค่าที่ไม่ตรงตัวเลือกมาตรฐาน = พิมพ์เอง → เลือก Other + เติมข้อความ
+    setRadio('sp','Other'); if(spo){spo.style.display='block';spo.value=val;}
+  }
+}
 function setChecksByName(name,arr){
   arr=arr||[];
   document.querySelectorAll('input[name="'+name+'"]').forEach(function(c){
@@ -2323,7 +2347,7 @@ function fillForm(d){
   // ตั้งราคาใหม่หลัง onExamTypeChange (ที่เขียนทับด้วยราคา default คลินิก)
   setVal('f-price',d.price);
   // ── Specimen / Method / Adequacy / TZ ──
-  setRadio('sp',d.sp); setRadio('mt',d.mt);
+  setSpecimen(d.sp); setRadio('mt',d.mt);
   setRadio('adq',d.adq); setRadio('tz',d.tz);
   // ── Categorization ──
   setRadio('cat',d.cat);
@@ -2537,7 +2561,7 @@ function collectForm(){
   // สั่ง HPV อย่างเดียว → ไม่บันทึกผล PAP ใดๆ (กันค่าเริ่มต้น "Negative" หลุดเข้าไป)
   return{name:V('f-name'),age:V('f-age'),dc:V('f-dc'),dr:V('f-dr'),phone:V('f-phone'),
     price:V('f-price'),cyto:V('f-cyto'),clinic:V('f-clinic'),examType:examType,examLabel:eDef.label,
-    sp:R('sp'),mt:R('mt'),
+    sp:(function(){ var v=R('sp'); if(v==='Other'){ var o=(document.getElementById('sp-other')||{}).value||''; return o.trim()||'Other'; } return v; })(),mt:R('mt'),
     adq:noPapResult?'':R('adq'), tz:noPapResult?'':R('tz'), cat:noPapResult?'':R('cat'),
     orgs:noPapResult?[]:CH('pg-org'), orgsEpi:noPapResult?[]:CHN('org-epi'),
     nnv:noPapResult?[]:CH('pg-nnv'), rcc:noPapResult?[]:CH('pg-rcc'),
@@ -3309,6 +3333,7 @@ function clearForm(){
   setPillRadio('tz','Presence of endocervical/Transformation zone component.');
   setPillRadio('cat','Negative for Intraepithelial Lesion or Malignancy');
   setPillRadio('hr','Nondetected');
+  setSpecimen('Cervical/Vagina/Endocervical');   // รีเซ็ต Type of Specimen + ซ่อนช่อง Other
   // เติมราคาอัตโนมัติตามประเภทตรวจ+คลินิกที่ค้างไว้ (คลินิกเดิม)
   var _et=(document.querySelector('input[name="examType"]:checked')||{}).value;
   if(_et && typeof onExamTypeChange==='function') onExamTypeChange(_et);
