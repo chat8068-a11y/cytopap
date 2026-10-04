@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap" rel="stylesheet">
-<title>CytoPAP System v104 — Cervical Cytology Lab Management</title>
+<title>CytoPAP System v108 — Cervical Cytology Lab Management</title>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
 <style>
@@ -259,7 +259,7 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
         <div class="sub">Cervical Cytology<br>Lab Management</div>
       </div>
     </div>
-    <span class="ver" id="ver-badge">v104 — Bethesda 2001 / 2014 🔒</span>
+    <span class="ver" id="ver-badge">v108 — Bethesda 2001 / 2014 🔒</span>
   </div>
   <nav class="nav">
     <button class="nav-btn active" onclick="showPage('form')" id="nb-form">
@@ -302,7 +302,7 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
 <div class="sb-foot">
     <div>ThinPrep PAP / SurePath</div>
     <div>HPV DNA Genotype Testing</div>
-    <div style="margin-top:6px;opacity:.4" id="ver-foot">v104 — CytoPAP System</div>
+    <div style="margin-top:6px;opacity:.4" id="ver-foot">v108 — CytoPAP System</div>
   </div>
 </aside>
 
@@ -467,6 +467,16 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
           </div>
         </div>
       </div>
+      <div class="field" style="margin-bottom:14px">
+        <label>Quality / Obscuring Factors (ปัจจัยรบกวนการอ่าน — เลือกได้หลายข้อ ถ้ามี)</label>
+        <div class="pills" id="pg-obsc">
+          <label class="pill"><input type="checkbox" name="obsc" value="Partially obscured by blood">ถูกบดบังด้วยเลือด (blood)</label>
+          <label class="pill"><input type="checkbox" name="obsc" value="Partially obscured by inflammation">ถูกบดบังด้วยการอักเสบ (inflammation)</label>
+          <label class="pill"><input type="checkbox" name="obsc" value="Thick/overlapping cells, interpretation limited">เซลล์หนา/ซ้อนกันเกินไป (thick)</label>
+          <label class="pill"><input type="checkbox" name="obsc" value="Scant squamous cellularity">เซลล์ squamous น้อย (scant)</label>
+          <label class="pill"><input type="checkbox" name="obsc" value="Air-drying artifact">Air-drying artifact</label>
+        </div>
+      </div>
       <div id="biopsy-note" style="display:none;background:#FFF8E1;border:1px solid #FFD54F;border-radius:8px;padding:12px;margin-bottom:12px;font-size:13px;color:#5D4037"><strong>Biopsy</strong> — บันทึกชื่อและราคาเท่านั้น ไม่มีผลตรวจ</div>
 <div id="sec-cyto-wrap">
       <div class="divider"></div>
@@ -566,9 +576,11 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
           <div class="field">
             <label>Glandular Cell Abnormality</label>
             <div class="pills">
-              <label class="pill"><input type="radio" name="gln" value="Atypical glandular cells, NOS (endocervical)">Atypical glandular cells, NOS (endocervical)</label>
-              <label class="pill"><input type="radio" name="gln" value="Atypical glandular cells, NOS (endometrial)">Atypical glandular cells, NOS (endometrial)</label>
-              <label class="pill"><input type="radio" name="gln" value="Atypical glandular cells, favor neoplastic (endocervical)">Atypical glandular cells, favor neoplastic (endocervical)</label>
+              <label class="pill"><input type="radio" name="gln" value="Atypical endocervical cells">Atypical endocervical cells</label>
+              <label class="pill"><input type="radio" name="gln" value="Atypical endometrial cells">Atypical endometrial cells</label>
+              <label class="pill"><input type="radio" name="gln" value="Atypical glandular cells, NOS">Atypical glandular cells, NOS</label>
+              <label class="pill"><input type="radio" name="gln" value="Atypical endocervical cells, favor neoplastic">Atypical endocervical cells, favor neoplastic</label>
+              <label class="pill"><input type="radio" name="gln" value="Atypical glandular cells, favor neoplastic">Atypical glandular cells, favor neoplastic</label>
               <label class="pill"><input type="radio" name="gln" value="Endocervical adenocarcinoma in situ (AIS)">Endocervical adenocarcinoma in situ (AIS)</label>
               <label class="pill"><input type="radio" name="gln" value="Adenocarcinoma (endocervical)">Adenocarcinoma (endocervical)</label>
               <label class="pill"><input type="radio" name="gln" value="Adenocarcinoma (endometrial)">Adenocarcinoma (endometrial)</label>
@@ -1417,7 +1429,7 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
 // ══════════════════════════════════════════════════
 // CytoPAP System — JSONBin Cloud Sync Edition
 // ══════════════════════════════════════════════════
-var APP_VERSION = 'v104';   // ⬅️ แก้เลขเวอร์ชันที่นี่ที่เดียว — จุดอื่นอัปเดตตามอัตโนมัติ
+var APP_VERSION = 'v108';   // ⬅️ แก้เลขเวอร์ชันที่นี่ที่เดียว — จุดอื่นอัปเดตตามอัตโนมัติ
 document.addEventListener('DOMContentLoaded', function(){
   try{
     document.title = document.title.replace(/v\d+/, APP_VERSION);
@@ -1426,6 +1438,7 @@ document.addEventListener('DOMContentLoaded', function(){
   }catch(e){}
   // เตือนก่อนปิด/รีเฟรช ถ้ากำลังกรอกผลค้างอยู่ (กันข้อมูลหาย)
   window.addEventListener('beforeunload', function(e){
+    flushSaveLocal();   // บันทึกค้างทันทีก่อนปิด (กัน debounce ยังไม่ทำงาน)
     if(formHasUnsavedData()){ e.preventDefault(); e.returnValue=''; return ''; }
   });
 });
@@ -1559,28 +1572,34 @@ function lsUsage(){
   return { bytes:bytes, pct: Math.min(100, bytes/LS_LIMIT*100) };
 }
 
-function saveLocal(){
+// ── เซฟลง localStorage แบบ debounce ───────────────────────────────
+// เดิม: ทุกการกระทำเรียก JSON.stringify ข้อมูลทั้งก้อนทันที (ช้าเมื่อข้อมูลเยอะ + บล็อกจังหวะกดปุ่ม)
+// ใหม่: หน่วง 500ms รวมการเซฟถี่ๆ เป็นครั้งเดียว + ย้ายงานหนักออกจากจังหวะคลิก → UI ลื่นขึ้น
+var _saveTimer=null, _savePending=false;
+function _saveLocalNow(){
+  _savePending=false;
+  if(_saveTimer){ clearTimeout(_saveTimer); _saveTimer=null; }
   try{
     var rStr=JSON.stringify(slimAll(REC));
     var cStr=JSON.stringify(CFG);
-    // เก็บคีย์เดียว (เดิมเก็บซ้ำ 2 คีย์ = กินพื้นที่ 2 เท่าโดยไม่จำเป็น)
     localStorage.setItem('cp7_rec', rStr);
     localStorage.setItem('cp7_cfg', cStr);
-    // ลบคีย์เก่าทิ้ง คืนพื้นที่ทันที
     try{ localStorage.removeItem('cp5_rec'); localStorage.removeItem('cp5_cfg'); }catch(e){}
-    // เตือนเมื่อพื้นที่ใกล้เต็ม — เดิมเต็มแล้ว "พังเงียบ"
     var u=lsUsage();
     if(u.pct>=80) warnStorage(u);
   }catch(e){
-    // โควตาเต็มจริง → ต้องเตือนดังๆ ไม่ใช่ console.warn เงียบๆ
     var full = (e && (e.name==='QuotaExceededError' || e.code===22 || e.code===1014));
-    if(full){
-      warnStorage(lsUsage(), true);
-    } else {
-      console.warn('localStorage unavailable', e);
-    }
+    if(full){ warnStorage(lsUsage(), true); }
+    else { console.warn('localStorage unavailable', e); }
   }
 }
+function saveLocal(){
+  _savePending=true;
+  if(_saveTimer) clearTimeout(_saveTimer);
+  _saveTimer=setTimeout(_saveLocalNow, 500);
+}
+// บันทึกค้างทันที (เรียกก่อนปิดแท็บ / ก่อนซิงค์ Cloud กันข้อมูลหาย)
+function flushSaveLocal(){ if(_savePending) _saveLocalNow(); }
 function warnStorage(u, isFull){
   var b=document.getElementById('storage-banner');
   if(!b){
@@ -1991,6 +2010,7 @@ async function cleanupBadResults(includeStale){
 
 async function pushToJb(){
   try{
+    flushSaveLocal();   // บันทึกค้างลงเครื่องก่อน (local + cloud ตรงกัน)
     // ป้องกันการ push clinics ว่าง — ถ้า clinics ว่างไม่ให้ push cfg.clinics
     var safeClinics = (CFG.clinics && CFG.clinics.length > 0) ? CFG.clinics : null;
     var payload = {
@@ -2364,7 +2384,7 @@ function fillForm(d){
   var secOrg=document.getElementById('sec-org'); if(secOrg) secOrg.style.display='block';
   // ── Organisms / NNV / RCC / Epi ──
   setChecksById('pg-org',d.orgs); setChecksByName('org-epi',d.orgsEpi);
-  setChecksById('pg-nnv',d.nnv); setChecksById('pg-rcc',d.rcc);
+  setChecksById('pg-nnv',d.nnv); setChecksById('pg-rcc',d.rcc); setChecksById('pg-obsc',d.obsc);
   // ── Squamous (sqm + sub-options) ──
   var sqmBase=d.sqmBase||'';
   if(!sqmBase && d.sqm){ sqmBase=d.sqm.split(' — ')[0]; } // record เก่าไม่มี sqmBase
@@ -2567,15 +2587,18 @@ function collectForm(){
     sqmFull=sqmVal+' — '+hsilSubs.join(', ');
   }
   // สั่ง HPV อย่างเดียว → ไม่บันทึกผล PAP ใดๆ (กันค่าเริ่มต้น "Negative" หลุดเข้าไป)
+  // บันทึก sqm/gln (ชนิดความผิดปกติ) เฉพาะเมื่อ cat=ผิดปกติจริง — กันข้อมูลค้างบน Negative
+  var _catAbn = (!noPapResult && R('cat')==='Epithelial Cell Abnormality');
   return{name:V('f-name'),age:V('f-age'),dc:V('f-dc'),dr:V('f-dr'),phone:V('f-phone'),
     price:V('f-price'),cyto:V('f-cyto'),clinic:V('f-clinic'),examType:examType,examLabel:eDef.label,
     sp:(function(){ var v=R('sp'); if(v==='Other'){ var o=(document.getElementById('sp-other')||{}).value||''; return o.trim()||'Other'; } return v; })(),mt:R('mt'),
     adq:noPapResult?'':R('adq'), tz:noPapResult?'':R('tz'), cat:noPapResult?'':R('cat'),
     orgs:noPapResult?[]:CH('pg-org'), orgsEpi:noPapResult?[]:CHN('org-epi'),
     nnv:noPapResult?[]:CH('pg-nnv'), rcc:noPapResult?[]:CH('pg-rcc'),
-    sqm:noPapResult?'':sqmFull, sqmBase:noPapResult?'':sqmVal,
-    lsilSubs:noPapResult?[]:lsilSubs, hsilSubs:noPapResult?[]:hsilSubs,
-    gln:hasHpvOrder?R('gln'):'', rmk:V('f-rmk'),
+    obsc:noPapResult?[]:CH('pg-obsc'),
+    sqm:_catAbn?sqmFull:'', sqmBase:_catAbn?sqmVal:'',
+    lsilSubs:_catAbn?lsilSubs:[], hsilSubs:_catAbn?hsilSubs:[],
+    gln:_catAbn?R('gln'):'', rmk:V('f-rmk'),
     // ไม่ได้สั่งตรวจ HPV → ห้ามเก็บผล HPV ใดๆ (กันปุ่มที่ค้างจากรายการก่อนหน้าในโหมดกรอกเร็ว)
     hi: hasHpvOrder ? 'yes' : 'no',
     hkit:hasHpvOrder?V('f-hkit'):'', hmth:hasHpvOrder?V('f-hmth'):'', hr:hasHpvOrder?R('hr'):'',
@@ -2736,6 +2759,7 @@ function buildReport(d){
       '<div style="border:1px solid #000;padding:5pt 8pt;font-size:12.5pt;font-weight:500;margin-bottom:4pt;line-height:1.55">'+
         '<div><b>Specimen Adequacy :&nbsp;</b>'+eh(d.adq)+'</div>'+
         '<div style="padding-left:12pt">'+eh(d.tz)+'</div>'+
+        ((d.obsc&&d.obsc.length)?'<div style="padding-left:12pt">'+eh(d.obsc.join('; '))+'</div>':'')+
         '<div style="margin-top:3pt"><b>General Categorization :&nbsp;</b></div>'+
         '<div style="padding-left:12pt">'+eh(d.cat)+'</div>'+
         orgLine+nnvLine+rccLine+epiLine+
@@ -3317,7 +3341,7 @@ function clearForm(){
   if(_dc && !_dc.value) _dc.value=today;
   if(_dr && !_dr.value) _dr.value=today;
   // ── reset checkboxes ทั้งหมด (organism, nnv, rcc, org-epi, lsil-sub, hsil-sub)
-  var cbGroups=['pg-org','pg-org-epi','pg-nnv','pg-rcc'];
+  var cbGroups=['pg-org','pg-org-epi','pg-nnv','pg-rcc','pg-obsc'];
   cbGroups.forEach(function(gid){
     var g=document.getElementById(gid);
     if(!g) return;
@@ -3331,6 +3355,13 @@ function clearForm(){
     document.querySelectorAll('input[name="'+nm+'"]').forEach(function(cb){
       cb.checked=false;
       if(cb.parentElement) cb.parentElement.classList.remove('sel');
+    });
+  });
+  // reset radio ผลผิดปกติ sqm (squamous) + gln (glandular) — กันค่าค้างจากเคสก่อน (บั๊ก)
+  ['sqm','gln'].forEach(function(nm){
+    document.querySelectorAll('input[name="'+nm+'"]').forEach(function(rb){
+      rb.checked=false;
+      if(rb.parentElement) rb.parentElement.classList.remove('sel');
     });
   });
   // ซ่อน sub-option panels
@@ -3557,6 +3588,46 @@ function printBatch(){
 
 // ─── BILLING ──────────────────────────────────────
 var MONTH_TH=['','มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+// ─── ตรวจจับคลินิกซ้ำ/สะกดต่าง/ไม่อยู่ในรายการตั้งค่า (กันบิลแยกเงินผิด) ──────
+function normClinicKey(s){ return (s||'').trim().replace(/\s+/g,' ').toLowerCase(); }
+function findClinicIssues(){
+  var fixedNames=(CFG.clinics||[]).map(function(c){return typeof c==='object'?(c.name||''):c;}).filter(Boolean);
+  var fixedSet={}; fixedNames.forEach(function(n){ fixedSet[n]=true; });
+  var fixedNorm={}; fixedNames.forEach(function(n){ fixedNorm[normClinicKey(n)]=n; });
+  // นับชื่อคลินิกที่ใช้จริงใน records
+  var used={};
+  REC.forEach(function(r){ var c=(r.clinic||'').trim(); if(c) used[c]=(used[c]||0)+1; });
+  // orphan = ชื่อใน records ที่ไม่ตรงกับรายการตั้งค่าแบบเป๊ะ
+  var orphans=[];
+  Object.keys(used).forEach(function(c){
+    if(!fixedSet[c]) orphans.push({name:c, count:used[c], suggest:fixedNorm[normClinicKey(c)]||''});
+  });
+  // near-dup = ชื่อที่ normalize เหมือนกัน แต่สะกด/เว้นวรรคต่าง (รวม records + ตั้งค่า)
+  var all={}; Object.keys(used).forEach(function(c){all[c]=true;}); fixedNames.forEach(function(n){all[n]=true;});
+  var byNorm={}; Object.keys(all).forEach(function(n){ var k=normClinicKey(n); (byNorm[k]=byNorm[k]||[]).push(n); });
+  var nearDup=[]; Object.keys(byNorm).forEach(function(k){ if(byNorm[k].length>1) nearDup.push(byNorm[k]); });
+  return {orphans:orphans, nearDup:nearDup, hasIssue:(orphans.length>0||nearDup.length>0)};
+}
+function clinicIssueBanner(){
+  var iss=findClinicIssues();
+  if(!iss.hasIssue) return '';
+  var h='<div style="background:#fff8e6;border:1.5px solid #dd9000;border-radius:10px;padding:12px 16px;margin-bottom:14px">'+
+    '<div style="font-weight:700;color:#9a6700;margin-bottom:6px">⚠️ พบคลินิกที่อาจซ้ำ/สะกดต่าง — ตรวจก่อนเก็บเงิน (กันบิลแยกผิด)</div>';
+  if(iss.nearDup.length){
+    h+='<div style="font-size:12.5px;color:#8a6d00;margin-bottom:4px"><b>ชื่อคล้ายกัน (ควรรวมเป็นชื่อเดียว):</b></div>';
+    iss.nearDup.forEach(function(g){ h+='<div style="font-size:12px;color:#8a6d00;padding-left:10px">• '+g.map(eh).join('  ⟷  ')+'</div>'; });
+  }
+  if(iss.orphans.length){
+    h+='<div style="font-size:12.5px;color:#8a6d00;margin:6px 0 4px"><b>ชื่อที่ไม่อยู่ในรายการตั้งค่า (orphan):</b></div>';
+    iss.orphans.slice(0,12).forEach(function(o){
+      h+='<div style="font-size:12px;color:#8a6d00;padding-left:10px">• '+eh(o.name)+' ('+o.count+' ราย)'+(o.suggest?' → น่าจะคือ "'+eh(o.suggest)+'"':'')+'</div>';
+    });
+    if(iss.orphans.length>12) h+='<div style="font-size:11px;color:#8a6d00;padding-left:10px">... และอีก '+(iss.orphans.length-12)+' ชื่อ</div>';
+  }
+  h+='<div style="margin-top:8px"><button onclick="showPage(\'records\');setTimeout(function(){var b=document.getElementById(\'batch-clinic-panel\');if(b){b.style.display=\'block\';if(typeof populateBatchNew===\'function\')populateBatchNew();b.scrollIntoView({behavior:\'smooth\'});}},200)" class="btn btn-sm" style="background:#dd9000;color:#fff;border:none">🔄 ไปรวมชื่อคลินิก (Batch)</button></div>';
+  h+='</div>';
+  return h;
+}
 function renderBilling(){
   var mFrom=parseInt(document.getElementById('bill-month').value);
   var mTo=parseInt(document.getElementById('bill-month-to').value);
@@ -3654,7 +3725,7 @@ function renderBilling(){
     '</div></div>';
 
   // Per-clinic tables
-  var html='';
+  var html=clinicIssueBanner();   // เตือนคลินิกซ้ำ/สะกดต่าง บนสุด (กันบิลแยกเงินผิด)
   // เก็บ context สำหรับปุ่ม toggle (ส่ง index เป็นตัวเลข = ปลอดภัยใน onclick)
   window._billCtx={ clinics:Object.keys(clinicMap), y:y, mF:mFrom, mT:mTo };
   Object.keys(clinicMap).forEach(function(cl, _ci){
@@ -3938,11 +4009,30 @@ async function saveSettings(){
   var ak=document.getElementById('s-aikey'); if(ak) CFG.aiKey=ak.value.trim();
   var ap=document.getElementById('s-aiproxy'); if(ap) CFG.aiProxy=ap.value.trim();
   var amo=document.getElementById('s-aimodel'); if(amo) CFG.aiModel=amo.value.trim();
-  // ตัดคลินิกที่ชื่อว่างออก
+  // ตัดคลินิกว่าง + ตัดช่องว่างหัวท้าย + รวมชื่อซ้ำ (กันบิลแยกเงินผิด)
+  var dupMerged=0, recFixed=0;
   if(CFG.clinics&&CFG.clinics.length){
-    CFG.clinics=CFG.clinics.filter(function(c){var n=(typeof c==='object'?(c.name||''):c)||''; return n.trim()!=='';});
+    var seen={}, deduped=[];
+    CFG.clinics.forEach(function(c){
+      var obj=(typeof c==='object')?c:{name:c,email:'',prices:{}};
+      var nm=(obj.name||'').trim();
+      if(!nm) return;                         // ตัดชื่อว่าง
+      obj.name=nm;                            // เก็บแบบตัดช่องว่างแล้ว
+      var key=normClinicKey(nm);              // เทียบแบบไม่สนตัวพิมพ์ + รวมเว้นวรรคซ้ำ
+      if(seen[key]){ dupMerged++; return; }   // ซ้ำ → ข้าม (เก็บตัวแรก)
+      seen[key]=true; deduped.push(obj);
+    });
+    CFG.clinics=deduped;
+    // ปรับชื่อคลินิกใน records ให้ตรงกับรายการที่ตั้งไว้ (ตัดช่องว่าง → ชื่อมาตรฐาน)
+    var canon={}; deduped.forEach(function(o){ canon[normClinicKey(o.name)]=o.name; });
+    REC.forEach(function(r){
+      if(!r.clinic) return;
+      var std=canon[normClinicKey(r.clinic)];
+      if(std && r.clinic!==std){ r.clinic=std; recFixed++; }   // เช่น "A ", "A  " → "A"
+    });
   }
   saveLocal(); fillClinicSelect(); fillDefaultStaff(); renderClinicEntries();
+  if(dupMerged>0||recFixed>0) toast('รวมคลินิกซ้ำ '+dupMerged+' รายการ'+(recFixed?' · ปรับชื่อใน '+recFixed+' record':'')+' (กันบิลแยกเงินผิด)','i',6000);
   toast('บันทึกการตั้งค่า — กำลังซิงค์ขึ้น Cloud...','i');
   try{ await pushToJb(); toast('บันทึก + ซิงค์ขึ้น Cloud เรียบร้อย ✅'); }
   catch(e){ toast('บันทึกในเครื่องแล้ว แต่ซิงค์ Cloud ไม่สำเร็จ ลองใหม่','e',5000); }
@@ -4398,21 +4488,24 @@ function renderBenchmark(){
   var base=papTested.length;
   if(!base){ host.innerHTML='<div style="text-align:center;color:#888;padding:20px">ยังไม่มีข้อมูล PAP เพียงพอสำหรับเทียบมาตรฐาน</div>'; return; }
 
-  function cnt(marker){ return papTested.filter(function(r){ return (r.sqm||'').indexOf(marker)>=0; }).length; }
+  // นับชนิด abnormal เฉพาะ record ที่ "ผิดปกติจริง" (cat=Epithelial Cell Abnormality)
+  // กัน sqm/gln ที่ค้างบน record Negative (บั๊กเก่า) ถูกนับเกินจริง ทำสถิติพอง
+  var papAbn=papTested.filter(function(r){ return r.cat==='Epithelial Cell Abnormality'; });
+  function cnt(marker){ return papAbn.filter(function(r){ return (r.sqm||'').indexOf(marker)>=0; }).length; }
   // จับเฉพาะรหัสในวงเล็บ (เช่น "(HSIL)") กัน ASC-H ที่มีคำ "cannot exclude HSIL" ถูกนับซ้ำ
   var n={ ascus:cnt('(ASC-US)'), asch:cnt('(ASC-H)'), lsil:cnt('(LSIL)'), hsil:cnt('(HSIL)'), scc:cnt('(SCC)') };
   // SCC อาจเก็บเป็น "Squamous cell carcinoma" — เผื่อไว้
-  if(!n.scc) n.scc=papTested.filter(function(r){return /carcinoma/i.test(r.sqm||'');}).length;
-  // AGC = เซลล์ต่อมผิดปกติ (glandular) — นับจาก field gln
-  n.agc=papTested.filter(function(r){return /Atypical glandular|adenocarcinoma|AIS/i.test(r.gln||'');}).length;
+  if(!n.scc) n.scc=papAbn.filter(function(r){return /carcinoma/i.test(r.sqm||'');}).length;
+  // AGC = เซลล์ต่อมผิดปกติทุกชนิด (glandular/endocervical/endometrial + adenocarcinoma + AIS)
+  n.agc=papAbn.filter(function(r){return /atypical (glandular|endocervical|endometrial)|adenocarcinoma|in situ|AIS/i.test(r.gln||'');}).length;
 
   // Unsatisfactory rate — ฐาน = ราย PAP ทั้งหมดที่ระบุ adequacy (รวม unsat)
   var papAdq=REC.filter(function(r){ return examDefOf(r).hasPap && r.examType!=='biopsy' && r.adq; });
   var unsatN=papAdq.filter(function(r){ return (r.adq||'')==='Unsatisfactory'; }).length;
   var unsatRate=papAdq.length?(unsatN/papAdq.length*100):0;
 
-  // HPV+ ใน ASC-US (reflex) — ตัวชี้วัดคุณภาพการอ่าน ASC-US
-  var ascusRecs=papTested.filter(function(r){ return (r.sqm||'').indexOf('(ASC-US)')>=0; });
+  // HPV+ ใน ASC-US (reflex) — ตัวชี้วัดคุณภาพการอ่าน ASC-US (เฉพาะรายผิดปกติจริง)
+  var ascusRecs=papAbn.filter(function(r){ return (r.sqm||'').indexOf('(ASC-US)')>=0; });
   var ascusHpvResulted=ascusRecs.filter(function(r){ return r.hr==='Detected'||r.hr==='Nondetected'; });
   var ascusHpvPos=ascusRecs.filter(function(r){ return r.hr==='Detected'; }).length;
   var ascusHpvRate=ascusHpvResulted.length?(ascusHpvPos/ascusHpvResulted.length*100):null;
