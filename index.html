@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap" rel="stylesheet">
-<title>CytoPAP System v110 — Cervical Cytology Lab Management</title>
+<title>CytoPAP System v111 — Cervical Cytology Lab Management</title>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
 <style>
@@ -259,7 +259,7 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
         <div class="sub">Cervical Cytology<br>Lab Management</div>
       </div>
     </div>
-    <span class="ver" id="ver-badge">v110 — Bethesda 2001 / 2014 🔒</span>
+    <span class="ver" id="ver-badge">v111 — Bethesda 2001 / 2014 🔒</span>
   </div>
   <nav class="nav">
     <button class="nav-btn active" onclick="showPage('form')" id="nb-form">
@@ -302,7 +302,7 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
 <div class="sb-foot">
     <div>ThinPrep PAP / SurePath</div>
     <div>HPV DNA Genotype Testing</div>
-    <div style="margin-top:6px;opacity:.4" id="ver-foot">v110 — CytoPAP System</div>
+    <div style="margin-top:6px;opacity:.4" id="ver-foot">v111 — CytoPAP System</div>
   </div>
 </aside>
 
@@ -1429,7 +1429,7 @@ body{-webkit-font-smoothing:antialiased;font-family:'Leelawadee UI','Leelawadee'
 // ══════════════════════════════════════════════════
 // CytoPAP System — JSONBin Cloud Sync Edition
 // ══════════════════════════════════════════════════
-var APP_VERSION = 'v110';   // ⬅️ แก้เลขเวอร์ชันที่นี่ที่เดียว — จุดอื่นอัปเดตตามอัตโนมัติ
+var APP_VERSION = 'v111';   // ⬅️ แก้เลขเวอร์ชันที่นี่ที่เดียว — จุดอื่นอัปเดตตามอัตโนมัติ
 document.addEventListener('DOMContentLoaded', function(){
   try{
     document.title = document.title.replace(/v\d+/, APP_VERSION);
@@ -4576,16 +4576,21 @@ function renderStats(){
 // ── กราฟเส้นรายได้แยกตามคลินิก (สลับ สัปดาห์/เดือน) ──────────────
 var _revClinicMode = 'month';
 // ─── เทียบอัตราผิดปกติกับค่ามาตรฐานสากล (CAP / Bethesda) ─────────────
-// ค่าอ้างอิง: CAP Interlaboratory Comparison Program + Bethesda System (ThinPrep LBC)
-//  ASC-US median 3.9% (90th %ile 11.7%) · ASC-H 0.2% · LSIL 2.1% · HSIL 0.5%
-//  ASC/SIL ratio: median 1.4-1.5, CAP acceptable 0.4-5.1 (aim <= 3)
+// ค่าอ้างอิง (ตรวจแหล่งแล้ว) — ใส่เฉพาะตัวที่มีแหล่งยืนยัน; null = ไม่มีแหล่งยืนยัน → ไม่ประเมินสถานะ ไม่เดาค่า
+//  ASC-US : median 4.9% (ThinPrep, CAP 2006) · P90 11.7% (ThinPrep, ตาราง CAP Today)
+//  LSIL   : median 2.5% · P90 5.1%   (CAP 2006 ภาพรวม)
+//  ASC-H  : median 0.3%              (CAP 2006 ภาพรวม)
+//  AGC    : median 0.2%              (CAP 2006 ภาพรวม)
+//  HSIL, SCC : ยังไม่พบค่าอ้างอิงที่ยืนยัน → แสดงอัตราของแล็บอย่างเดียว
+//  ASC/SIL : Bethesda แนะนำ < 3:1 · CAP ช่วงยอมรับ P5–P95 = 0.4–5.1 · median ThinPrep ~1.8–2.0 (แหล่งให้ค่าต่างกัน)
+//  Unsatisfactory (ThinPrep) : median 1.4% · P95 6.2% (เช็กลิสต์ CAP)
 var BENCHMARK = {
-  ascus: {label:'ASC-US', median:3.9, hi:11.7},
-  asch:  {label:'ASC-H',  median:0.2, hi:1.0},
-  lsil:  {label:'LSIL',   median:2.1, hi:5.0},
-  hsil:  {label:'HSIL',   median:0.5, hi:1.5},
-  scc:   {label:'SCC (มะเร็ง)', median:0.05, hi:0.3},
-  agc:   {label:'AGC (เซลล์ต่อม)', median:0.2, hi:0.7}
+  ascus: {label:'ASC-US', median:4.9, p90:11.7, mSrc:'ThinPrep, 2006', pSrc:'ThinPrep, CAP Today'},
+  asch:  {label:'ASC-H',  median:0.3, p90:null, mSrc:'ภาพรวม, 2006',   pSrc:''},
+  lsil:  {label:'LSIL',   median:2.5, p90:5.1,  mSrc:'ภาพรวม, 2006',   pSrc:'ภาพรวม, 2006'},
+  hsil:  {label:'HSIL',   median:null, p90:null, mSrc:'', pSrc:''},
+  scc:   {label:'SCC (มะเร็ง)', median:null, p90:null, mSrc:'', pSrc:''},
+  agc:   {label:'AGC (เซลล์ต่อม)', median:0.2, p90:null, mSrc:'ภาพรวม, 2006', pSrc:''}
 };
 function renderBenchmark(){
   var host=document.getElementById('benchmark-box'); if(!host) return;
@@ -4616,19 +4621,24 @@ function renderBenchmark(){
   var ascusHpvPos=ascusRecs.filter(function(r){ return r.hr==='Detected'; }).length;
   var ascusHpvRate=ascusHpvResulted.length?(ascusHpvPos/ascusHpvResulted.length*100):null;
 
-  // แถวตารางแต่ละตัวชี้วัด
+  // แถวตารางแต่ละตัวชี้วัด — ประเมินสถานะเฉพาะตัวที่มีเปอร์เซ็นไทล์ที่ 90 จากแหล่งจริง (ไม่เดาเกณฑ์)
+  function sub(t){ return t?'<div style="font-size:10.5px;color:#93a1bb;font-weight:400">'+t+'</div>':''; }
   function row(key){
     var b=BENCHMARK[key]; var c=n[key]||0; var rate=base?(c/base*100):0;
-    // สถานะ: เขียว=ใกล้ median, เหลือง=สูงกว่าปกติ, แดง=เกิน 90th %ile / hi
-    var st, col, bg;
-    if(rate>b.hi){ st='สูงกว่าค่าปกติ'; col='#c0392b'; bg='#fdecea'; }
-    else if(rate>b.median*1.6){ st='ค่อนข้างสูง'; col='#d68910'; bg='#fef5e7'; }
-    else { st='อยู่ในเกณฑ์'; col='#1a7a3c'; bg='#eaf7ef'; }
+    var st, col, bg, rateCol;
+    if(b.p90!=null){
+      if(rate>b.p90){ st='เกินเปอร์เซ็นไทล์ที่ 90'; col='#c0392b'; bg='#fdecea'; }
+      else { st='ไม่เกินเปอร์เซ็นไทล์ที่ 90'; col='#1a7a3c'; bg='#eaf7ef'; }
+      rateCol=col;
+    } else {
+      st='ไม่มีเกณฑ์ที่ยืนยัน'; col='#6b7a99'; bg='#f0f2f7'; rateCol='#1a3a6e';
+    }
     return '<tr>'+
       '<td style="padding:8px 10px;border-bottom:1px solid #eee;font-weight:600">'+b.label+'</td>'+
       '<td style="padding:8px 10px;border-bottom:1px solid #eee;text-align:center">'+c+'</td>'+
-      '<td style="padding:8px 10px;border-bottom:1px solid #eee;text-align:center;font-weight:700;color:'+col+'">'+rate.toFixed(2)+'%</td>'+
-      '<td style="padding:8px 10px;border-bottom:1px solid #eee;text-align:center;color:#6b7a99">'+b.median+'%</td>'+
+      '<td style="padding:8px 10px;border-bottom:1px solid #eee;text-align:center;font-weight:700;color:'+rateCol+'">'+rate.toFixed(2)+'%</td>'+
+      '<td style="padding:8px 10px;border-bottom:1px solid #eee;text-align:center;color:#6b7a99">'+(b.median!=null?(b.median+'%'+sub(b.mSrc)):'—')+'</td>'+
+      '<td style="padding:8px 10px;border-bottom:1px solid #eee;text-align:center;color:#6b7a99">'+(b.p90!=null?(b.p90+'%'+sub(b.pSrc)):'—')+'</td>'+
       '<td style="padding:8px 10px;border-bottom:1px solid #eee;text-align:center"><span style="background:'+bg+';color:'+col+';padding:2px 10px;border-radius:12px;font-size:12px;font-weight:700">'+st+'</span></td>'+
     '</tr>';
   }
@@ -4638,8 +4648,8 @@ function renderBenchmark(){
   var ratio = sil>0 ? (asc/sil) : null;
   var rStr, rCol, rBg, rMsg;
   if(ratio===null){ rStr='—'; rCol='#888'; rBg='#f0f0f0'; rMsg='ยังไม่มีเคส SIL/มะเร็ง เพียงพอ'; }
-  else if(ratio>=0.4 && ratio<=3){ rStr=ratio.toFixed(2)+':1'; rCol='#1a7a3c'; rBg='#eaf7ef'; rMsg='✅ อยู่ในเกณฑ์ดี (CAP 0.4–5.1, เป้าหมาย ≤3)'; }
-  else if(ratio>3 && ratio<=5.1){ rStr=ratio.toFixed(2)+':1'; rCol='#d68910'; rBg='#fef5e7'; rMsg='⚠️ สูงกว่าเป้าหมาย (ยังในช่วง CAP 0.4–5.1 แต่ควร ≤3)'; }
+  else if(ratio>=0.4 && ratio<=3){ rStr=ratio.toFixed(2)+':1'; rCol='#1a7a3c'; rBg='#eaf7ef'; rMsg='✅ อยู่ในเกณฑ์ (น้อยกว่า 3:1 ตาม Bethesda · อยู่ในช่วง CAP 0.4–5.1)'; }
+  else if(ratio>3 && ratio<=5.1){ rStr=ratio.toFixed(2)+':1'; rCol='#d68910'; rBg='#fef5e7'; rMsg='⚠️ สูงกว่า 3:1 ที่ Bethesda แนะนำ (ยังอยู่ในช่วง CAP 0.4–5.1)'; }
   else { rStr=ratio.toFixed(2)+':1'; rCol='#c0392b'; rBg='#fdecea'; rMsg=(ratio<0.4?'🔴 ต่ำผิดปกติ (อาจ overcall SIL หรือ undercall ASC)':'🔴 เกินช่วง CAP (0.4–5.1)'); }
 
   host.innerHTML=
@@ -4649,15 +4659,16 @@ function renderBenchmark(){
       '<div style="min-width:130px"><div style="font-size:12px;color:#6b7a99">ASC/SIL Ratio</div>'+
         '<div style="font-size:30px;font-weight:800;color:'+rCol+'">'+rStr+'</div></div>'+
       '<div style="flex:1;min-width:200px"><div style="font-weight:700;color:'+rCol+';font-size:13px">'+rMsg+'</div>'+
-        '<div style="font-size:11.5px;color:#6b7a99;margin-top:3px">= (ASC-US + ASC-H) ÷ (LSIL + HSIL + SCC) · ค่ากลางสากล 1.5–2.0 (ThinPrep) · ตัวชี้วัดความไวการอ่านผล</div></div>'+
+        '<div style="font-size:11.5px;color:#6b7a99;margin-top:3px">= (ASC-US + ASC-H) ÷ (LSIL + HSIL + SCC) · ค่ากลาง ThinPrep ประมาณ 1.8–2.0 (แหล่งอ้างอิงให้ค่าต่างกันเล็กน้อย) · ตัวชี้วัดความไวการอ่านผล</div></div>'+
     '</div>'+
     // ตารางอัตราแต่ละหมวด
-    '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px;min-width:460px">'+
+    '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px;min-width:600px">'+
       '<thead><tr style="background:#f7f9fd">'+
         '<th style="padding:8px 10px;text-align:left;color:#1a3a6e">หมวด</th>'+
         '<th style="padding:8px 10px;color:#1a3a6e">จำนวน</th>'+
         '<th style="padding:8px 10px;color:#1a3a6e">อัตราแล็บ</th>'+
-        '<th style="padding:8px 10px;color:#1a3a6e">ค่ากลางสากล</th>'+
+        '<th style="padding:8px 10px;color:#1a3a6e">ค่ากลาง CAP</th>'+
+        '<th style="padding:8px 10px;color:#1a3a6e">เปอร์เซ็นไทล์ที่ 90</th>'+
         '<th style="padding:8px 10px;color:#1a3a6e">สถานะ</th>'+
       '</tr></thead><tbody>'+
       row('ascus')+row('asch')+row('lsil')+row('hsil')+row('scc')+row('agc')+
@@ -4665,14 +4676,15 @@ function renderBenchmark(){
     // Unsatisfactory rate + HPV+ ใน ASC-US
     '<div class="grid g2" style="margin-top:14px;gap:10px">'+
       (function(){
-        var col=unsatRate<=1?'#1a7a3c':(unsatRate<=2?'#d68910':'#c0392b');
-        var bg=unsatRate<=1?'#eaf7ef':(unsatRate<=2?'#fef5e7':'#fdecea');
-        var msg=unsatRate<=1?'✅ อยู่ในเกณฑ์ดี (CAP เป้าหมาย ≤1%)':(unsatRate<=2?'⚠️ ควรปรับปรุง (ยอมรับ ≤2%)':'🔴 สูงเกินเกณฑ์ (>2%)');
+        // เกณฑ์จากเช็กลิสต์ CAP (ThinPrep): median 1.4% · เปอร์เซ็นไทล์ที่ 95 = 6.2%
+        var col=unsatRate<=1.4?'#1a7a3c':(unsatRate<=6.2?'#d68910':'#c0392b');
+        var bg=unsatRate<=1.4?'#eaf7ef':(unsatRate<=6.2?'#fef5e7':'#fdecea');
+        var msg=unsatRate<=1.4?'ไม่เกินค่ากลาง CAP (1.4%)':(unsatRate<=6.2?'สูงกว่าค่ากลาง แต่ยังไม่เกินเปอร์เซ็นไทล์ที่ 95 (6.2%)':'เกินเปอร์เซ็นไทล์ที่ 95 ของ CAP (6.2%)');
         return '<div style="background:'+bg+';border:1px solid '+col+'44;border-radius:10px;padding:14px">'+
           '<div style="font-size:12px;color:#6b7a99">Unsatisfactory Rate (สิ่งส่งตรวจไม่เพียงพอ)</div>'+
           '<div style="font-size:26px;font-weight:800;color:'+col+'">'+unsatRate.toFixed(2)+'%</div>'+
           '<div style="font-size:12px;color:'+col+';font-weight:600">'+msg+'</div>'+
-          '<div style="font-size:11px;color:#6b7a99;margin-top:3px">'+unsatN+' / '+papAdq.length+' ราย · ค่ากลางสากล ~1%</div>'+
+          '<div style="font-size:11px;color:#6b7a99;margin-top:3px">'+unsatN+' / '+papAdq.length+' ราย · CAP ThinPrep: ค่ากลาง 1.4% · P95 6.2%</div>'+
         '</div>';
       })()+
       (function(){
@@ -4682,22 +4694,24 @@ function renderBenchmark(){
             '<div style="font-size:26px;font-weight:800;color:#888">—</div>'+
             '<div style="font-size:12px;color:#888">ยังไม่มีเคส ASC-US ที่ลงผล HPV</div></div>';
         }
-        var inRange=ascusHpvRate>=40&&ascusHpvRate<=60;
-        var col=inRange?'#1a7a3c':'#d68910';
-        var bg=inRange?'#eaf7ef':'#fef5e7';
-        var msg=inRange?'✅ อยู่ในเกณฑ์ (สากล ~40–50%)':(ascusHpvRate<40?'⚠️ ต่ำกว่าปกติ (อาจ overcall ASC-US)':'⚠️ สูงกว่าปกติ');
-        return '<div style="background:'+bg+';border:1px solid '+col+'44;border-radius:10px;padding:14px">'+
+        // ไม่ตัดสินผ่าน/ไม่ผ่าน: มีแหล่งอ้างอิงเดียว และค่านี้ขึ้นกับอายุประชากรและชุดตรวจ HPV
+        return '<div style="background:#f0f2f7;border:1px solid #6b7a9944;border-radius:10px;padding:14px">'+
           '<div style="font-size:12px;color:#6b7a99">HPV+ ใน ASC-US (reflex)</div>'+
-          '<div style="font-size:26px;font-weight:800;color:'+col+'">'+ascusHpvRate.toFixed(0)+'%</div>'+
-          '<div style="font-size:12px;color:'+col+';font-weight:600">'+msg+'</div>'+
-          '<div style="font-size:11px;color:#6b7a99;margin-top:3px">'+ascusHpvPos+' / '+ascusHpvResulted.length+' ราย · ค่ากลางสากล 40–50%</div>'+
+          '<div style="font-size:26px;font-weight:800;color:#1a3a6e">'+ascusHpvRate.toFixed(0)+'%</div>'+
+          '<div style="font-size:12px;color:#6b7a99;font-weight:600">เทียบตัวอย่างอ้างอิง 1 แหล่ง (ไม่ประเมินสถานะ)</div>'+
+          '<div style="font-size:11px;color:#6b7a99;margin-top:3px">'+ascusHpvPos+' / '+ascusHpvResulted.length+' ราย · งานโปแลนด์ 30,066 ราย พบ 48.9% (ขึ้นกับอายุและชุดตรวจ HPV)</div>'+
         '</div>';
       })()+
     '</div>'+
-    '<div style="font-size:11px;color:#93a1bb;margin-top:12px;line-height:1.5">'+
-      '📚 ค่าอ้างอิง: CAP Interlaboratory Comparison Program + Bethesda System (ThinPrep LBC) · '+
-      'ค่ากลาง (median) เป็นค่ากึ่งกลางของแล็บทั่วโลก ไม่ใช่ "เป้าที่ต้องได้" — อัตราจริงขึ้นกับกลุ่มประชากรที่ตรวจ<br>'+
-      '⚠️ เป็นเครื่องมือช่วยติดตามคุณภาพเบื้องต้น การแปลผลควรพิจารณาโดยแพทย์/ผู้อำนวยการแล็บร่วมกับบริบทของแล็บ'+
+    '<div style="font-size:11px;color:#93a1bb;margin-top:12px;line-height:1.6">'+
+      '<b>แหล่งอ้างอิง</b><br>'+
+      '• ASC-US / LSIL / ASC-H / AGC: CAP Interlaboratory Comparison Program 2006 (Arch Pathol Lab Med 134(3):331) · เปอร์เซ็นไทล์ที่ 90 ของ ASC-US (ThinPrep) จากตารางใน CAP Today, ส.ค. 2023<br>'+
+      '• ASC/SIL: Bethesda แนะนำน้อยกว่า 3:1 · CAP ช่วงยอมรับ P5–P95 = 0.4–5.1 (อ้างในงานทบทวนคุณภาพ) · ค่ากลาง ThinPrep ประมาณ 1.8–2.0<br>'+
+      '• Unsatisfactory: เช็กลิสต์ CAP (ThinPrep) ค่ากลาง 1.4% · P95 6.2% (อ้างใน meta-analysis ThinPrep/SurePath)<br>'+
+      '• HPV+ ใน ASC-US: งานโปแลนด์ PMC8394579 (30,066 ราย)<br>'+
+      '• HSIL และ SCC: ยังไม่พบค่าอ้างอิงที่ยืนยัน จึงแสดงอัตราของแล็บอย่างเดียว ไม่ประเมินสถานะ<br>'+
+      '<b>ข้อจำกัด:</b> ข้อมูล CAP ส่วนใหญ่เป็นแล็บสหรัฐและเก่าถึงปี 2006 · หมวดที่มีเคสน้อยมาก อัตราแกว่งง่ายและไม่ควรอ่านเป็นข้อสรุป · '+
+      'เป็นเครื่องมือช่วยติดตามคุณภาพเบื้องต้น ไม่ใช่เกณฑ์ผ่าน/ไม่ผ่าน การแปลผลควรให้แพทย์หรือผู้อำนวยการแล็บพิจารณาร่วมกับบริบทของแล็บ'+
     '</div>';
 }
 function setRevClinicMode(m){
